@@ -1,0 +1,7 @@
+build/
+libtorch/
+
+CMakeLists.txt
+
+.vscode
+.DS_Store
