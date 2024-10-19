@@ -51,7 +51,7 @@ public:
         // auto = std::shared_ptr<Module>
         for (auto& child : children)
         {
-            auto& child_params = child->parameters();
+            auto child_params = child->parameters();
             all_params.insert(all_params.end(), child_params.begin(), child_params.end());
         }
         return all_params;
@@ -78,6 +78,7 @@ private:
 int main()
 {
     torch::Tensor tensor = torch::rand({2, 3});
-    tensor.requires_grad_(true);
-    std::cout << tensor.requires_grad() << std::endl;
+    std::cout << tensor << std::endl;
+    tensor = torch::matmul(tensor, tensor.t());
+    std::cout << tensor << std::endl;
 }
