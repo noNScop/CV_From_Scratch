@@ -40,6 +40,12 @@ class Module
         return all_params;
     }
 
+    // children modules getter
+    std::vector<std::shared_ptr<Module>> get_children() const
+    {
+        return children;
+    }
+
     // Overloading operator() to mimic Python's __call__
     template <typename... Args> auto operator()(Args &&...args) // perfect forwarding
     {
@@ -52,13 +58,13 @@ class Module
     virtual torch::Tensor forward(torch::Tensor x) = 0;
 
     // params setter
-    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> &parameters)
+    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> parameters)
     {
         params.insert(params.end(), parameters.begin(), parameters.end());
     }
 
     // children setter
-    void register_modules(const std::initializer_list<std::shared_ptr<Module>> &modules)
+    void register_modules(const std::initializer_list<std::shared_ptr<Module>> modules)
     {
         children.insert(children.end(), modules.begin(), modules.end());
     }
@@ -244,5 +250,26 @@ class BatchNorm2d : public Module
         }
 
         return gamma->view({1, in_channels, 1, 1}) * x + beta->view({1, in_channels, 1, 1});
+    }
+};
+
+class Sequential : public Module
+{
+  public:
+    Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
+    {
+        register_modules(layers);
+    }
+
+  private:
+    torch::Tensor forward(torch::Tensor x) override
+    {
+        // std::vector<std::shared_ptr<Module>> children;
+        for (const std::shared_ptr<Module> &module : get_children())
+        {
+            x = (*module)(x);
+        }
+
+        return x;
     }
 };

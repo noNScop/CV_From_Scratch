@@ -9,7 +9,9 @@
 class Module
 {
   public:
-    Module();
+    Module() : training(true)
+    {
+    }
 
     // training getter
     bool is_training() const;
@@ -20,6 +22,9 @@ class Module
     // Get all parameters recursively
     std::vector<std::shared_ptr<torch::Tensor>> parameters() const;
 
+    // children modules getter
+    std::vector<std::shared_ptr<Module>> get_children() const;
+
     // Overloading operator() to mimic Python's __call__
     template <typename... Args> auto operator()(Args &&...args); // perfect forwarding
 
@@ -28,10 +33,10 @@ class Module
     virtual torch::Tensor forward(torch::Tensor x) = 0;
 
     // params setter
-    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> &parameters);
+    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> parameters);
 
     // children setter
-    void register_modules(const std::initializer_list<std::shared_ptr<Module>> &modules);
+    void register_modules(const std::initializer_list<std::shared_ptr<Module>> modules);
 
   private:
     std::vector<std::shared_ptr<torch::Tensor>> params;
@@ -98,6 +103,17 @@ class BatchNorm2d : public Module
     torch::Tensor mean;
     torch::Tensor var;
 
+    torch::Tensor forward(torch::Tensor x) override;
+};
+
+class Sequential : public Module
+{
+  public:
+    Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
+    {
+    }
+
+  private:
     torch::Tensor forward(torch::Tensor x) override;
 };
 
