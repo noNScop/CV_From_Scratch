@@ -41,8 +41,7 @@ class Module
     }
 
     // Overloading operator() to mimic Python's __call__
-    template <typename... Args>     // template parameter pack
-    auto operator()(Args &&...args) // perfect forwarding
+    template <typename... Args> auto operator()(Args &&...args) // perfect forwarding
     {
         // Call forward() and return the result
         return forward(std::forward<Args>(args)...);
@@ -53,7 +52,7 @@ class Module
     virtual torch::Tensor forward(torch::Tensor x) = 0;
 
     // params setter
-    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> &&parameters)
+    void register_parameters(const std::initializer_list<std::shared_ptr<torch::Tensor>> &parameters)
     {
         params.insert(params.end(), parameters.begin(), parameters.end());
     }
@@ -195,7 +194,7 @@ class BatchNorm2d : public Module
   public:
     BatchNorm2d(int in_channels, bool zero_init = false, float eps = 1e-5, float momentum = 0.1)
         : in_channels(in_channels), eps(eps), momentum(momentum)
-    {   
+    {
         // initialising gamma with zeros is usefull for residual connections
         if (zero_init)
         {
@@ -240,77 +239,10 @@ class BatchNorm2d : public Module
         else
         {
             // in place sqrt would be stored in running_var, we don't want that
-            x = (x - running_mean->view({1, in_channels, 1, 1})) / (running_var->view({1, in_channels, 1, 1}) + eps).sqrt();
+            x = (x - running_mean->view({1, in_channels, 1, 1})) /
+                (running_var->view({1, in_channels, 1, 1}) + eps).sqrt();
         }
 
         return gamma->view({1, in_channels, 1, 1}) * x + beta->view({1, in_channels, 1, 1});
     }
 };
-
-
-
-
-
-void test_linear_layer() {
-    // Create a Linear layer with input features = 4, output features = 2
-    Linear linear_layer(4, 2);
-
-    // Create a sample input tensor of size (batch_size, input_features)
-    torch::Tensor input = torch::randn({3, 4});  // 3 batches, 4 input features
-    std::cout << "Input Tensor (Linear):\n" << input << std::endl;
-
-    // Pass the input through the Linear layer
-    torch::Tensor output = linear_layer(input);
-
-    // Print the output
-    std::cout << "Output Tensor (Linear):\n" << output << std::endl;
-
-    // Check the output shape (batch_size, output_features)
-    assert(output.sizes() == torch::IntArrayRef({3, 2}));
-    std::cout << "Linear layer test passed!" << std::endl;
-}
-
-void test_conv_layer() {
-    // Create a Conv2d layer with input channels = 3, output channels = 8, kernel size = 3, stride = 1, padding = 1
-    Conv2d conv_layer(3, 8, 3, 1, 1);
-
-    // Create a sample input tensor of size (batch_size, channels, height, width)
-    torch::Tensor input = torch::randn({1, 3, 32, 32});  // 1 batch, 3 channels, 32x32 image
-    std::cout << "Input Tensor (Conv2d):\n" << input.sizes() << std::endl;
-
-    // Pass the input through the Conv2d layer
-    torch::Tensor output = conv_layer(input);
-
-    // Print the output
-    std::cout << "Output Tensor (Conv2d):\n" << output.sizes() << std::endl;
-
-    // Expected output shape is (batch_size, output_channels, height, width)
-    // After convolution with stride 1 and padding 1, the height and width remain unchanged (32x32)
-    assert(output.sizes() == torch::IntArrayRef({1, 8, 32, 32}));
-    std::cout << "Conv2d layer test passed!" << std::endl;
-}
-
-int main()
-{
-    torch::Tensor tensor = torch::randn({4, 3, 1, 1});
-    BatchNorm2d bn(3);
-    std::cout << bn.is_training() << std::endl;
-    torch::Tensor a = bn(tensor);
-    std::cout << tensor - a << std::endl;
-    torch::Tensor rmean = *bn.parameters()[2];
-    torch::Tensor rvar = *bn.parameters()[3];
-    bn.set_training(false);
-    a = bn(tensor);
-    tensor = (tensor - rmean.view({1, 3, 1, 1})) / (rvar.view({1, 3, 1, 1}) + 1e-5).sqrt();
-    std::cout << tensor << std::endl;
-    std::cout << a << std::endl;
-    std::cout << bn.is_training() << std::endl;
-
-    // Test Linear Layer
-    test_linear_layer();
-
-    // Test Conv2d Layer
-    test_conv_layer();
-
-    return 0;
-}
