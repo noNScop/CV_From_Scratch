@@ -44,7 +44,7 @@ std::vector<std::shared_ptr<Module>> Module::get_children() const
 }
 
 // Overloading operator() to mimic Python's __call__
-template <typename... Args> auto Module::operator()(Args &&...args) // perfect forwarding
+template <typename... Args> torch::Tensor Module::operator()(Args &&...args) // perfect forwarding
 {
     // Call forward() and return the result
     return forward(std::forward<Args>(args)...);
@@ -171,7 +171,7 @@ BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momen
     beta = std::make_shared<torch::Tensor>(torch::zeros({in_channels}, torch::requires_grad(true)));
     running_mean = std::make_shared<torch::Tensor>(torch::zeros({in_channels}));
     running_var = std::make_shared<torch::Tensor>(torch::ones({in_channels}));
-    register_parameters({gamma, beta, running_mean, running_var});
+    register_parameters({gamma, beta});
 }
 
 torch::Tensor BatchNorm2d::forward(torch::Tensor x)
@@ -210,4 +210,10 @@ torch::Tensor Sequential::forward(torch::Tensor x)
     }
 
     return x;
+}
+
+torch::Tensor ReLU::forward(torch::Tensor x)
+{
+    namespace F = torch::nn::functional;
+    return F::relu(x);
 }

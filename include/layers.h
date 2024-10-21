@@ -23,7 +23,7 @@ class Module
     std::vector<std::shared_ptr<Module>> get_children() const;
 
     // Overloading operator() to mimic Python's __call__
-    template <typename... Args> auto operator()(Args &&...args); // perfect forwarding
+    template <typename... Args> torch::Tensor operator()(Args &&...args); // perfect forwarding
 
   protected:
     // pure virtual method is overridden by derived class
@@ -103,6 +103,11 @@ class Sequential : public Module
     Sequential(std::initializer_list<std::shared_ptr<Module>> layers);
 
   private:
+    torch::Tensor forward(torch::Tensor x) override;
+};
+
+class ReLU : public Module
+{
     torch::Tensor forward(torch::Tensor x) override;
 };
 
