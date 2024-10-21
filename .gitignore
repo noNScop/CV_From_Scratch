@@ -1,8 +1,5 @@
 build/
 libtorch/
-data/mnist/
-
-CMakeLists.txt
 
 .vscode
 .DS_Store
