@@ -1,7 +1,6 @@
 #ifndef LAYERS_H
 #define LAYERS_H
 
-#include <iostream>
 #include <memory>
 #include <torch/torch.h>
 #include <vector>
@@ -9,9 +8,7 @@
 class Module
 {
   public:
-    Module() : training(true)
-    {
-    }
+    Module();
 
     // training getter
     bool is_training() const;
@@ -62,10 +59,7 @@ class Conv2d : public Module
 {
   public:
     Conv2d(int in_channels, int out_channels, int kernel_size, int stride = 1, int padding = 0, bool use_xavier = false,
-           bool use_bias = true)
-        : out_channels(out_channels), kernel_size(kernel_size), stride(stride), padding(padding)
-    {
-    }
+           bool use_bias = true);
 
   private:
     std::shared_ptr<torch::Tensor> weights;
@@ -86,10 +80,7 @@ class Conv2d : public Module
 class BatchNorm2d : public Module
 {
   public:
-    BatchNorm2d(int in_channels, bool zero_init = false, float eps = 1e-5, float momentum = 0.1)
-        : in_channels(in_channels), eps(eps), momentum(momentum)
-    {
-    }
+    BatchNorm2d(int in_channels, bool zero_init = false, float eps = 1e-5, float momentum = 0.1);
 
   private:
     std::shared_ptr<torch::Tensor> gamma;
@@ -109,9 +100,7 @@ class BatchNorm2d : public Module
 class Sequential : public Module
 {
   public:
-    Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
-    {
-    }
+    Sequential(std::initializer_list<std::shared_ptr<Module>> layers);
 
   private:
     torch::Tensor forward(torch::Tensor x) override;
