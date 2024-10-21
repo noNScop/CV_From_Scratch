@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 include_directories(include)
 
 # Add the main executable with source files
-add_executable(CV_From_Scratch src/layers.cpp src/models.cpp src/data_utils.cpp src/model_manager.cpp)
+add_executable(CV_From_Scratch src/layers.cpp src/models.cpp src/model_manager.cpp)
 
 # Link Libtorch
 target_link_libraries(CV_From_Scratch "${TORCH_LIBRARIES}")
