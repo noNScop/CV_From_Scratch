@@ -1,5 +1,6 @@
 build/
 libtorch/
+data/mnist/
 
 CMakeLists.txt
 
