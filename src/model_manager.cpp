@@ -2,7 +2,6 @@
 #include "models.h"
 #include <iostream>
 #include <torch/torch.h>
-#include <typeinfo>
 
 class ModelManager
 {
@@ -19,7 +18,7 @@ class ModelManager
             parameters.push_back(*p);
         }
 
-        torch::optim::SGD optimizer(parameters, torch::optim::SGDOptions(0.01).momentum(0));
+        torch::optim::SGD optimizer(parameters, torch::optim::SGDOptions(0.01).momentum(0.9));
         for (int i = 0; i < epochs; ++i)
         {
             train_loss = 0;
@@ -113,8 +112,6 @@ int main()
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
     ModelManager manager = ModelManager(model);
     manager.train(train_dl, valid_dl, 5);
-
-    
 
     return 0;
 }
