@@ -2,6 +2,7 @@
 #include "models.h"
 #include <iostream>
 #include <torch/torch.h>
+#include <typeinfo>
 
 class ModelManager
 {
@@ -18,8 +19,7 @@ class ModelManager
             parameters.push_back(*p);
         }
 
-
-        torch::optim::SGD optimizer(parameters, torch::optim::SGDOptions(0.01).momentum(0.9));
+        torch::optim::SGD optimizer(parameters, torch::optim::SGDOptions(0.01).momentum(0));
         for (int i = 0; i < epochs; ++i)
         {
             train_loss = 0;
@@ -28,8 +28,8 @@ class ModelManager
             valid_accuracy = 0;
             train_step(train_dl, optimizer);
             valid_step(valid_dl);
-            std::cout << "Epoch:" << i + 1 << "train_loss:" << train_loss << "train_acc:" << train_accuracy;
-            std::cout << "valid_loss:" << valid_loss << "valid_acc:" << valid_accuracy << std::endl;
+            std::cout << "Epoch: " << i + 1 << " train_loss: " << train_loss << " train_acc: " << train_accuracy;
+            std::cout << " valid_loss: " << valid_loss << " valid_acc: " << valid_accuracy << std::endl;
         }
     }
 
@@ -64,14 +64,12 @@ class ModelManager
             optimizer.step();
             optimizer.zero_grad();
 
-            avg_loss = avg_loss + (float)loss.item<float>();
-            auto predicted = output.argmax(1); // Get predicted classes
-            auto correct = (predicted == batch.target).sum().item(); // Count correct predictions
-            avg_accuracy += (float)correct / batch.data.size(0); // Calculate accuracy for this batch
+            avg_loss += loss.item<float>();
+            avg_accuracy += (output.argmax(1) == batch.target).sum().template item<float>() / batch.data.size(0);
         }
 
-        train_loss = train_loss + avg_loss / iters;
-        train_accuracy = train_accuracy + avg_accuracy / iters;
+        train_loss += avg_loss / iters;
+        train_accuracy += avg_accuracy / iters;
     }
 
     template <typename DataLoader> void valid_step(DataLoader &valid_dl)
@@ -90,21 +88,19 @@ class ModelManager
             output = (*model)(batch.data);
             loss = F::cross_entropy(output, batch.target);
 
-            avg_loss = avg_loss + loss.item<float>();
-            auto predicted = output.argmax(1); // Get predicted classes
-            auto correct = (predicted == batch.target).sum().item(); // Count correct predictions
-            avg_accuracy += (float)correct / batch.data.size(0); // Calculate accuracy for this batch
+            avg_loss += loss.item<float>();
+            avg_accuracy += (output.argmax(1) == batch.target).sum().template item<float>() / batch.data.size(0);
         }
 
-        valid_loss = valid_loss + avg_loss / iters;
-        valid_accuracy = valid_accuracy + avg_accuracy / iters;
+        valid_loss += avg_loss / iters;
+        valid_accuracy += avg_accuracy / iters;
     }
 };
 
 int main()
 {
     // Initialize dataset by providing the path to the MNIST data directory
-    std::string mnist_data_path = "/home/vertex/Desktop/CV_From_Scratch/data"; // Adjust this path if necessary
+    std::string mnist_data_path = "/Users/nonscop/Desktop/CV_From_Scratch/data"; // Adjust this path if necessary
     torch::data::datasets::MNIST train_dsa(mnist_data_path, torch::data::datasets::MNIST::Mode::kTrain);
     auto train_ds = train_dsa.map(torch::data::transforms::Stack<>());
     torch::data::datasets::MNIST valid_dsa(mnist_data_path, torch::data::datasets::MNIST::Mode::kTest);
@@ -117,6 +113,8 @@ int main()
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
     ModelManager manager = ModelManager(model);
     manager.train(train_dl, valid_dl, 5);
+
+    
 
     return 0;
 }

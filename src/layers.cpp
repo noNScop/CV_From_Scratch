@@ -155,8 +155,8 @@ torch::Tensor Conv2d::forward(torch::Tensor x)
     return x;
 }
 
-BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momentum)
-    : in_channels(in_channels), eps(eps), momentum(momentum)
+BatchNorm2d::BatchNorm2d(int in_channels, bool running_stats, bool zero_init, float eps, float momentum)
+    : in_channels(in_channels), eps(eps), momentum(momentum), running_stats(running_stats)
 {
     // initialising gamma with zeros is usefull for residual connections
     if (zero_init)
@@ -170,13 +170,13 @@ BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momen
 
     beta = std::make_shared<torch::Tensor>(torch::zeros({in_channels}, torch::requires_grad(true)));
     running_mean = std::make_shared<torch::Tensor>(torch::zeros({in_channels}));
-    running_var = std::make_shared<torch::Tensor>(torch::ones({in_channels}));
+    running_var = std::make_shared<torch::Tensor>(torch::zeros({in_channels}));
     register_parameters({gamma, beta});
 }
 
 torch::Tensor BatchNorm2d::forward(torch::Tensor x)
 {
-    if (is_training())
+    if (is_training() || !running_stats)
     {
         // calculate statistics for each channel across batch and spatial dimensions
         mean = x.mean({0, 2, 3}, true);       // keepdim = true

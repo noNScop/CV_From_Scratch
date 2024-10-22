@@ -80,7 +80,7 @@ class Conv2d : public Module
 class BatchNorm2d : public Module
 {
   public:
-    BatchNorm2d(int in_channels, bool zero_init = false, float eps = 1e-5, float momentum = 0.1);
+    BatchNorm2d(int in_channels, bool running_stats = true, bool zero_init = false, float eps = 1e-5, float momentum = 0.1);
 
   private:
     std::shared_ptr<torch::Tensor> gamma;
@@ -90,6 +90,7 @@ class BatchNorm2d : public Module
     int in_channels;
     float eps;
     float momentum;
+    bool running_stats;
 
     torch::Tensor mean;
     torch::Tensor var;
