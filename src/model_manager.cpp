@@ -3,22 +3,20 @@
 #include <iostream>
 #include <torch/torch.h>
 
-class ModelManager
+class SGD
+{
+};
+
+class Learner
 {
   public:
-    ModelManager(std::shared_ptr<Module> model) : model(model)
+    Learner(std::shared_ptr<Module> model) : model(model)
     {
     }
 
     template <typename DataLoader> void train(DataLoader &train_dl, DataLoader &valid_dl, int epochs)
     {
-        std::vector<torch::Tensor> parameters;
-        for (const auto &p : model->parameters())
-        {
-            parameters.push_back(*p);
-        }
-
-        torch::optim::SGD optimizer(parameters, torch::optim::SGDOptions(0.01).momentum(0.9));
+        torch::optim::SGD optimizer(model->parameters(), torch::optim::SGDOptions(0.01).momentum(0.9));
         for (int i = 0; i < epochs; ++i)
         {
             train_loss = 0;
@@ -27,8 +25,8 @@ class ModelManager
             valid_accuracy = 0;
             train_step(train_dl, optimizer);
             valid_step(valid_dl);
-            std::cout << "Epoch: " << i + 1 << " train_loss: " << train_loss << " train_acc: " << train_accuracy;
-            std::cout << " valid_loss: " << valid_loss << " valid_acc: " << valid_accuracy << std::endl;
+            std::cout << "Epoch: " << i + 1 << " train_loss: " << train_loss << " train_acc: " << train_accuracy
+                      << " valid_loss: " << valid_loss << " valid_acc: " << valid_accuracy << std::endl;
         }
     }
 
@@ -110,8 +108,8 @@ int main()
     auto valid_dl = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(std::move(valid_ds), 32);
     // Iterate through batches
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
-    ModelManager manager = ModelManager(model);
-    manager.train(train_dl, valid_dl, 5);
+    Learner learn = Learner(model);
+    learn.train(train_dl, valid_dl, 5);
 
     return 0;
 }
