@@ -3,8 +3,60 @@
 #include <iostream>
 #include <torch/torch.h>
 
-class SGD
+class Optimizer
 {
+  public:
+    Optimizer(std::vector<torch::Tensor> parameters, float learning_rate)
+        : parameters(parameters), learning_rate(learning_rate)
+    {
+    }
+
+    float learning_rate;
+
+    void zero_grad()
+    {
+        for (torch::Tensor &param : parameters)
+        {
+            if (param.grad().defined())
+            {
+                param.grad().zero_();
+            }
+        }
+    }
+
+    virtual void step() = 0;
+
+  protected:
+    std::vector<torch::Tensor> parameters;
+};
+
+class SGD : public Optimizer
+{
+  public:
+    SGD(std::vector<torch::Tensor> parameters, float learning_rate = 0.01, float momentum = 0.9)
+        : Optimizer(parameters, learning_rate), momentum(momentum)
+    {
+        for (torch::Tensor &param : parameters)
+        {
+            ema.push_back(torch::zeros_like(param));
+        }
+    }
+
+    void step() override
+    {
+        for (int i = 0; i < parameters.size(); ++i)
+        {
+            if (parameters[i].grad().defined())
+            {
+                ema[i] = momentum * ema[i] + parameters[i].grad();
+                parameters[i].data() -= learning_rate * ema[i];
+            }
+        }
+    }
+
+  private:
+    float momentum;
+    std::vector<torch::Tensor> ema; // exponential moving average
 };
 
 class Learner
@@ -16,7 +68,7 @@ class Learner
 
     template <typename DataLoader> void train(DataLoader &train_dl, DataLoader &valid_dl, int epochs)
     {
-        torch::optim::SGD optimizer(model->parameters(), torch::optim::SGDOptions(0.01).momentum(0.9));
+        SGD optimizer(model->parameters());
         for (int i = 0; i < epochs; ++i)
         {
             train_loss = 0;
@@ -42,7 +94,7 @@ class Learner
     torch::Tensor output;
     torch::Tensor loss;
 
-    template <typename DataLoader> void train_step(DataLoader &train_dl, torch::optim::SGD &optimizer)
+    template <typename DataLoader> void train_step(DataLoader &train_dl, SGD &optimizer)
     {
         namespace F = torch::nn::functional;
 
