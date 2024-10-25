@@ -43,13 +43,6 @@ std::vector<std::shared_ptr<Module>> Module::get_children() const
     return children;
 }
 
-// Overloading operator() to mimic Python's __call__
-template <typename... Args> torch::Tensor Module::operator()(Args &&...args) // perfect forwarding
-{
-    // Call forward() and return the result
-    return forward(std::forward<Args>(args)...);
-}
-
 // params setter
 void Module::register_parameters(const std::initializer_list<torch::Tensor> parameters)
 {

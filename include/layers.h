@@ -114,4 +114,11 @@ class ReLU : public Module
     torch::Tensor forward(torch::Tensor x) override;
 };
 
+// Overloading operator() to mimic Python's __call__
+template <typename... Args> torch::Tensor Module::operator()(Args &&...args) // perfect forwarding
+{
+    // Call forward() and return the result
+    return forward(std::forward<Args>(args)...);
+}
+
 #endif
