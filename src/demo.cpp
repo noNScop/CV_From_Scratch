@@ -6,7 +6,7 @@
 int main()
 {
     // Initialize dataset by providing the path to the MNIST data directory
-    std::string mnist_data_path = "/Users/nonscop/Desktop/CV_From_Scratch/data"; // Adjust this path if necessary
+    std::string mnist_data_path = "/home/vertex/Desktop/CV_From_Scratch/data"; // Adjust this path if necessary
     torch::data::datasets::MNIST train_dsa(mnist_data_path, torch::data::datasets::MNIST::Mode::kTrain);
     auto train_ds = train_dsa.map(torch::data::transforms::Stack<>());
     torch::data::datasets::MNIST valid_dsa(mnist_data_path, torch::data::datasets::MNIST::Mode::kTest);
@@ -18,7 +18,7 @@ int main()
     // Iterate through batches
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
     Learner learn = Learner(model);
-    learn.train(train_dl, valid_dl, 5);
+    learn.train(train_dl, valid_dl, 1);
 
     return 0;
 }

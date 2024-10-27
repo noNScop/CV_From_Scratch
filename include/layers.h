@@ -46,10 +46,11 @@ class Linear : public Module
   public:
     // ni - number of input features, nf - number of output features
     Linear(int in_channels, int out_channels, bool use_xavier = false, bool use_bias = true);
-
-  private:
+    
     torch::Tensor weights;
     torch::Tensor bias;
+
+  private:
     bool use_bias;
 
     torch::Tensor forward(torch::Tensor x) override;
@@ -62,9 +63,10 @@ class Conv2d : public Module
     Conv2d(int in_channels, int out_channels, int kernel_size, int stride = 1, int padding = 0, bool use_xavier = false,
            bool use_bias = true);
 
-  private:
     torch::Tensor weights;
     torch::Tensor bias;
+    
+  private:
     int out_channels;
     int kernel_size;
     int stride;
