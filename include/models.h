@@ -2,6 +2,7 @@
 #define MODELS_H
 
 #include "layers.h"
+#include <memory>
 #include <torch/torch.h>
 
 // MnistCNN expects inputs of (batch_size, 1, 28, 28), as mnist images have a single color channel

@@ -18,7 +18,7 @@ int main()
     // Iterate through batches
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
     Learner learn = Learner(model);
-    learn.train(train_dl, valid_dl, 1);
+    learn.train(train_dl, valid_dl, 5);
 
     return 0;
 }

@@ -145,8 +145,8 @@ torch::Tensor Conv2d::forward(torch::Tensor x)
     return x;
 }
 
-BatchNorm2d::BatchNorm2d(int in_channels, bool running_stats, bool zero_init, float eps, float momentum)
-    : in_channels(in_channels), eps(eps), momentum(momentum), running_stats(running_stats)
+BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momentum)
+    : in_channels(in_channels), eps(eps), momentum(momentum)
 {
     // initialising gamma with zeros is usefull for residual connections
     if (zero_init)
@@ -166,14 +166,13 @@ BatchNorm2d::BatchNorm2d(int in_channels, bool running_stats, bool zero_init, fl
 
 torch::Tensor BatchNorm2d::forward(torch::Tensor x)
 {
-    if (is_training() || !running_stats)
+    if (is_training())
     {
         // calculate statistics for each channel across batch and spatial dimensions
         mean = x.mean({0, 2, 3}, true);      // keepdim = true
-        var = x.var({0, 2, 3}, false, true); // unbiased = false, keepdim = true
-        x = (x - mean) / (var + eps).sqrt();
+        var = x.var({0, 2, 3});
+        x = (x - mean) / (var.view({1, -1, 1, 1}) + eps).sqrt();
 
-        var = x.var({0, 2, 3}, true); // unbiased = true, keepdim = false (ubiased var is needed for running stats)
         running_mean = (1 - momentum) * running_mean + momentum * mean.view({in_channels});
         running_var = (1 - momentum) * running_var + momentum * var;
     }
