@@ -4,7 +4,6 @@
 #include "models.h"
 #include <vector>
 #include <torch/torch.h>
-#include <iostream>
 
 TEST_CASE( "Linear Layer", "[layers]" ) 
 {   
@@ -121,4 +120,32 @@ TEST_CASE( "ReLU layer", "[layers]" )
     torch::Tensor x = torch::tensor({-1, 1});
     ReLU relu = ReLU();
     REQUIRE( relu(x).equal(torch::tensor({0, 1})) );
+}
+
+TEST_CASE( "SGD optimizer", "[optimizers]" )
+{
+    torch::Tensor x = torch::rand({10, 1});
+    torch::Tensor y = 3 * x + 2;
+    Linear linear = Linear(1, 1);
+
+    // Different initializations
+    REQUIRE_NOTHROW( SGD(linear.parameters()) );
+    REQUIRE_NOTHROW( SGD(linear.parameters(), 1e-4, 0.99) );
+
+    SGD optimizer = SGD(linear.parameters());
+    torch::Tensor out;
+    torch::Tensor loss;
+
+    // Test on simple linear regression task
+    for (int i = 0; i < 1000; ++i)
+    {
+        out = linear(x);
+        loss = (out - y).pow(2).mean();
+        loss.backward();
+        optimizer.step();
+        optimizer.zero_grad();
+    }
+
+    REQUIRE( (linear.weights - 3).abs().item<float>() < 0.01 );
+    REQUIRE( (linear.bias - 2).abs().item<float>() < 0.01 );
 }
