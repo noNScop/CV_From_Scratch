@@ -8,6 +8,9 @@ add_executable(tests
 )
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain "${TORCH_LIBRARIES}")
 
+# Set C++ standard
+set_property(TARGET tests PROPERTY CXX_STANDARD 17)
+
 include(CTest)
 include(Catch)
 catch_discover_tests(tests)

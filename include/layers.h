@@ -4,11 +4,15 @@
 #include <memory>
 #include <torch/torch.h>
 #include <vector>
+#include <map>
 
 class Module
 {
   public:
     Module();
+
+    // Returns state dictionary with parameters as a map
+    std::map<std::string, torch::Tensor> state_dict() const;
 
     // training getter
     bool is_training() const;

@@ -7,6 +7,28 @@ Module::Module() : training(true)
 {
 }
 
+// Save the state dictionary to a map
+std::map<std::string, torch::Tensor> Module::state_dict() const
+{
+    std::map<std::string, torch::Tensor> state;
+    int i = 0;
+    for (const auto &param : params)
+    {
+        state["param_" + std::to_string(i++)] = param;
+    }
+    int j = 0;
+    for (const auto &child : children)
+    {
+        auto child_state = child->state_dict();
+        for (const auto &kv : child_state)
+        {
+            state["child_" + std::to_string(j) + "." + kv.first] = kv.second;
+        }
+        ++j;
+    }
+    return state;
+}
+
 // training getter
 bool Module::is_training() const
 {
@@ -169,7 +191,7 @@ torch::Tensor BatchNorm2d::forward(torch::Tensor x)
     if (is_training())
     {
         // calculate statistics for each channel across batch and spatial dimensions
-        mean = x.mean({0, 2, 3}, true);      // keepdim = true
+        mean = x.mean({0, 2, 3}, true); // keepdim = true
         var = x.var({0, 2, 3});
         x = (x - mean) / (var.view({1, -1, 1, 1}) + eps).sqrt();
 
