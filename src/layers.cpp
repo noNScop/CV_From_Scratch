@@ -216,7 +216,7 @@ torch::Tensor Sequential::forward(torch::Tensor x)
     // std::vector<std::shared_ptr<Module>> children;
     for (const std::shared_ptr<Module> &module : get_children())
     {
-        x = (*module)(x);
+        x = module->forward(x);
     }
 
     return x;

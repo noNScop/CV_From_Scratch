@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(CV_From_Scratch)
 
 set(CMAKE_PREFIX_PATH
-"$(CMAKE_SOURCE_DIR)/lib/libtorch"
-"$(CMAKE_SOURCE_DIR)/lib/Catch2"
-"$(CMAKE_SOURCE_DIR)/lib/opencv/build"
+"/Users/nonscop/Desktop/CV_From_Scratch/lib/libtorch"
+"/Users/nonscop/Desktop/CV_From_Scratch/lib/Catch2"
+"/Users/nonscop/Desktop/CV_From_Scratch/lib/opencv/build"
 )
 
 find_package(Torch REQUIRED)
@@ -18,6 +18,7 @@ include_directories(include ${OpenCV_INCLUDE_DIRS})
 # Add the main executable with source files
 add_executable(CV_From_Scratch 
     src/layers.cpp
+    src/vision_transforms.cpp
     src/data_utils.cpp
     src/models.cpp 
     src/train.cpp 

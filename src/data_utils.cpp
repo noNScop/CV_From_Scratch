@@ -1,16 +1,16 @@
-#include <vector>
-#include <string>
+#include "vision_transforms.h"
 #include <filesystem>
-#include <unordered_map>
-#include <torch/torch.h>
-#include <opencv2/opencv.hpp>
 #include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <variant>
+#include <opencv2/opencv.hpp>
+#include <torch/torch.h>
 
-class Dataset {
-public:
-    // Virtual destructor for proper cleanup of derived classes
-    virtual ~Dataset() = default;
-
+class Dataset
+{
+  public:
     // Pure virtual method to get dataset size
     virtual size_t size() const = 0;
 
@@ -22,7 +22,7 @@ class DataLoader
 {
 };
 
-class ImageFolder : Dataset
+class ImageFolder : public Dataset
 {
     // ----------REQUIRED DIRECTORY STRUCTURE----------
     // path/ <- train / validation dataset folder
@@ -45,18 +45,18 @@ class ImageFolder : Dataset
         {
             if (entry.is_regular_file())
             {
-            std::string image_path = entry.path().string();
-            std::string class_name = entry.path().parent_path().filename().string();
+                std::string image_path = entry.path().string();
+                std::string class_name = entry.path().parent_path().filename().string();
 
-            // Convert class name to label and store the maping
-            int label = label2idx++;
-            class_to_idx[class_name] = label;
+                // Convert class name to label and store the maping
+                int label = label2idx++;
+                class_to_idx[class_name] = label;
 
-            // Create label tensor
-            torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
+                // Create label tensor
+                torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
 
-            // Store the image and label in the data vector
-            data.push_back(std::make_pair(image_path, label_tensor));
+                // Store the image and label in the data vector
+                data.push_back(std::make_pair(image_path, label_tensor));
             }
         }
     }
@@ -77,7 +77,7 @@ class ImageFolder : Dataset
             throw std::out_of_range("Index out of range");
         }
     }
-    
+
     std::unordered_map<std::string, int> class_to_idx;
 
   private:
@@ -88,10 +88,24 @@ class ImageFolder : Dataset
 int main()
 {
     cv::Mat image = cv::imread("/Users/nonscop/Pictures/cropped-2560-1600-1105295.jpg");
-    cv::imshow("Display window", image);
+    std::shared_ptr<Resize> resize1 = std::make_shared<Resize>(Resize(128, 128));
+    std::shared_ptr<Resize> resize2 = std::make_shared<Resize>(Resize(3, 3));
+    std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
+    Compose transforms = Compose{resize1, resize2, totensor};
+
+    // cv::imshow("Display window", image);
+    // cv::waitKey(0);
+    // image = std::get<cv::Mat>(resize1(image));
+    // cv::imshow("Display window", image);
+    // cv::waitKey(0);
+    // image = std::get<cv::Mat>(resize2(image));
+    // cv::imshow("Display window", image);
+    // cv::waitKey(0);
+
+    torch::Tensor t = std::get<torch::Tensor>(transforms(image));
+    std::cout << t << std::endl;
 
     // Wait for a key press indefinitely
-    cv::waitKey(0);
 
     return 0;
 }

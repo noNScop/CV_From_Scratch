@@ -1,8 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
-#include "train.h"
 #include "layers.h"
+#include "vision_transforms.h"
 #include "models.h"
-#include <vector>
+#include "train.h"
+#include <opencv2/opencv.hpp>
 #include <torch/torch.h>
 
 TEST_CASE( "Linear Layer", "[layers]" ) 
@@ -108,7 +109,7 @@ TEST_CASE( "Sequential layer", "[layers]" )
     torch::Tensor test_output = sample_input;
     for (auto layer : seq.get_children())
     {
-        test_output = (*layer)(test_output);
+        test_output = layer->forward(test_output);
     }
 
     // Test functionality / Module registration
@@ -148,4 +149,15 @@ TEST_CASE( "SGD optimizer", "[optimizers]" )
 
     REQUIRE( (linear.weights - 3).abs().item<float>() < 0.01 );
     REQUIRE( (linear.bias - 2).abs().item<float>() < 0.01 );
+}
+
+TEST_CASE( "Compose, Resize and ToTensor transfroms", "[Transforms]" )
+{
+    cv::Mat test_image(224, 320, CV_32F, cv::Scalar(0));
+    std::shared_ptr<Resize> resize = std::make_shared<Resize>(Resize(3, 3));
+    std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
+    Compose transforms = Compose{resize, totensor};
+
+    torch::Tensor t = std::get<torch::Tensor>(transforms(test_image));
+    REQUIRE( t.sizes() == torch::IntArrayRef({1, 3, 3}) );
 }

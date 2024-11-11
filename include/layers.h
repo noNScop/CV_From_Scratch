@@ -29,10 +29,10 @@ class Module
     // Overloading operator() to mimic Python's __call__
     template <typename... Args> torch::Tensor operator()(Args &&...args); // perfect forwarding
 
-  protected:
     // pure virtual method is overridden by derived class
     virtual torch::Tensor forward(torch::Tensor x) = 0;
 
+  protected:
     // params setter
     void register_parameters(const std::initializer_list<torch::Tensor> parameters);
 
@@ -54,10 +54,10 @@ class Linear : public Module
     torch::Tensor weights;
     torch::Tensor bias;
 
+    torch::Tensor forward(torch::Tensor x) override;
+
   private:
     bool use_bias;
-
-    torch::Tensor forward(torch::Tensor x) override;
 };
 
 // classic convolutional layer
@@ -69,7 +69,9 @@ class Conv2d : public Module
 
     torch::Tensor weights;
     torch::Tensor bias;
-    
+
+    torch::Tensor forward(torch::Tensor x) override;
+
   private:
     int out_channels;
     int kernel_size;
@@ -81,14 +83,14 @@ class Conv2d : public Module
     int height;
     int width;
     int output_height;
-
-    torch::Tensor forward(torch::Tensor x) override;
 };
 
 class BatchNorm2d : public Module
 {
   public:
     BatchNorm2d(int in_channels, bool zero_init = false, float eps = 1e-5, float momentum = 0.1);
+
+    torch::Tensor forward(torch::Tensor x) override;
 
   private:
     torch::Tensor gamma;
@@ -101,8 +103,6 @@ class BatchNorm2d : public Module
 
     torch::Tensor mean;
     torch::Tensor var;
-
-    torch::Tensor forward(torch::Tensor x) override;
 };
 
 class Sequential : public Module
@@ -110,12 +110,12 @@ class Sequential : public Module
   public:
     Sequential(std::initializer_list<std::shared_ptr<Module>> layers);
 
-  private:
     torch::Tensor forward(torch::Tensor x) override;
 };
 
 class ReLU : public Module
 {
+  public:
     torch::Tensor forward(torch::Tensor x) override;
 };
 
