@@ -82,10 +82,10 @@ template <typename DataLoader> void Learner::train_step(DataLoader &train_dl, SG
     int iters = 0;
     model->set_training(true);
 
-    for (auto &batch : *train_dl)
+    for (auto &&batch : train_dl)
     {
         ++iters;
-        output = (*model)(batch.data);
+        output = model->forward(batch.data);
         loss = F::cross_entropy(output, batch.target);
 
         loss.backward();
@@ -110,10 +110,10 @@ template <typename DataLoader> void Learner::valid_step(DataLoader &valid_dl)
     int iters = 0;
     model->set_training(false);
 
-    for (auto &batch : *valid_dl)
+    for (auto &&batch : valid_dl)
     {
         ++iters;
-        output = (*model)(batch.data);
+        output = model->forward(batch.data);
         loss = F::cross_entropy(output, batch.target);
 
         batch_loss += loss.item<float>();

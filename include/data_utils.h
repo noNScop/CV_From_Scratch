@@ -64,6 +64,7 @@ class DataLoader
     size_t batch_size;
     bool auto_shuffle;
     std::vector<size_t> indices;
+    size_t last_batch_start_index;
     std::random_device rd;
     std::default_random_engine gen;
 };
@@ -108,7 +109,7 @@ class ImageFolder : public Dataset
 
   private:
     // a vector of file paths and labels
-    std::vector<std::pair<cv::Mat, torch::Tensor>> data;
+    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
     std::shared_ptr<Transform> transform;
 };
 

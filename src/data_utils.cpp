@@ -8,6 +8,7 @@ DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool
     // Initialize indices
     indices.resize(this->dataset->size());
     std::iota(indices.begin(), indices.end(), 0);
+    last_batch_start_index = indices.size() + (indices.size() % batch_size);
 }
 
 DataLoader::Iterator::Iterator(DataLoader &dataloader, size_t index) : dataloader(dataloader), index(index)
@@ -49,7 +50,7 @@ DataLoader::Iterator DataLoader::begin()
 
 DataLoader::Iterator DataLoader::end()
 {
-    return Iterator(*this, indices.size());
+    return Iterator(*this, last_batch_start_index);
 }
 
 void DataLoader::shuffle()
@@ -93,16 +94,32 @@ ImageFolder::ImageFolder(std::string path, std::shared_ptr<Transform> const &tra
             std::string class_name = entry.path().parent_path().filename().string();
 
             // Convert class name to label and store the mapping
-            int label = label2idx++;
-            class_to_idx[class_name] = label;
+            int label;
+            if (class_to_idx.count(class_name))
+            {
+                label = class_to_idx[class_name];
+            }
+            else
+            {
+                label = label2idx++;
+                class_to_idx[class_name] = label;
+            }
 
             // Create label tensor
             torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
 
-            cv::Mat image = cv::imread(image_path);
-            data.push_back({image, label_tensor});
+            cv::Mat image = cv::imread(image_path, cv::IMREAD_UNCHANGED);
+            
+            TransformResult tensor = this->transform->apply(image);
+
+            if (!std::holds_alternative<torch::Tensor>(tensor))
+            {
+                throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
+            }
+            
+            data.push_back({std::get<torch::Tensor>(tensor), label_tensor});
         }
-        else
+        else if (!entry.is_directory())
         {
             std::cerr << "Couldn't open a file: " << entry.path().string() << std::endl;
         }
@@ -121,13 +138,5 @@ std::pair<torch::Tensor, torch::Tensor> ImageFolder::get_item(size_t index) cons
         throw std::out_of_range("Index out of range");
     }
 
-    auto [image, label] = data[index];
-    TransformResult tensor = transform->apply(image);
-
-    if (!std::holds_alternative<torch::Tensor>(tensor))
-    {
-        throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
-    }
-
-    return {std::get<torch::Tensor>(tensor), label};
+    return data[index];
 }
