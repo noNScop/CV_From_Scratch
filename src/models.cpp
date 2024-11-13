@@ -1,6 +1,4 @@
 #include "models.h"
-#include "layers.h"
-#include <torch/torch.h>
 
 std::shared_ptr<Sequential> MnistCNN::conv_block(int in_channels, int out_channels, int kernel_size, bool activation)
 {

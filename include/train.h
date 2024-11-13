@@ -78,7 +78,7 @@ template <typename DataLoader> void Learner::train_step(DataLoader &train_dl, SG
     namespace F = torch::nn::functional;
 
     float batch_accuracy = 0; // batch accuracy accumulator
-    float batch_loss = 0; // batch loss accumulator
+    float batch_loss = 0;     // batch loss accumulator
     int iters = 0;
     model->set_training(true);
 
@@ -106,7 +106,7 @@ template <typename DataLoader> void Learner::valid_step(DataLoader &valid_dl)
 
     torch::NoGradGuard nograd;
     float batch_accuracy = 0; // batch accuracy accumulator
-    float batch_loss = 0; // batch loss accumulator
+    float batch_loss = 0;     // batch loss accumulator
     int iters = 0;
     model->set_training(false);
 

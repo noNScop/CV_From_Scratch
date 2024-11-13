@@ -1,18 +1,15 @@
 #include "vision_transforms.h"
-#include <variant>
-#include <memory>
-#include <vector>
-#include <opencv2/opencv.hpp>
-#include <torch/torch.h>
 
 using TransformResult = std::variant<cv::Mat, torch::Tensor>;
 
-Compose::Compose(std::initializer_list<std::shared_ptr<Transform>> transforms) : transforms(transforms) {}
+Compose::Compose(std::initializer_list<std::shared_ptr<Transform>> transforms) : transforms(transforms)
+{
+}
 
 TransformResult Compose::apply(cv::Mat image)
 {
     TransformResult output = image;
-    for (auto const& transform : transforms)
+    for (auto const &transform : transforms)
     {
         if (std::holds_alternative<cv::Mat>(output))
         {
@@ -48,7 +45,9 @@ TransformResult ToTensor::apply(cv::Mat image)
     return tensor;
 }
 
-Resize::Resize(int width, int height) : width(width), height(height) {}
+Resize::Resize(int width, int height) : width(width), height(height)
+{
+}
 
 TransformResult Resize::apply(cv::Mat input)
 {

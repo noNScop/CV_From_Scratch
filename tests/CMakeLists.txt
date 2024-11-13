@@ -4,6 +4,7 @@ add_executable(tests
     test.cpp
     ../src/layers.cpp
     ../src/vision_transforms.cpp
+    ../src/data_utils.cpp
     ../src/models.cpp
     ../src/train.cpp
 )

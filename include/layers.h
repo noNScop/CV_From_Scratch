@@ -1,10 +1,10 @@
 #ifndef LAYERS_H
 #define LAYERS_H
 
+#include <map>
 #include <memory>
 #include <torch/torch.h>
 #include <vector>
-#include <map>
 
 class Module
 {
@@ -50,7 +50,7 @@ class Linear : public Module
   public:
     // ni - number of input features, nf - number of output features
     Linear(int in_channels, int out_channels, bool use_xavier = false, bool use_bias = true);
-    
+
     torch::Tensor weights;
     torch::Tensor bias;
 

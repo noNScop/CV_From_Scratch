@@ -1,8 +1,4 @@
 #include "train.h"
-#include "layers.h"
-#include "models.h"
-#include <iostream>
-#include <torch/torch.h>
 
 Optimizer::Optimizer(std::vector<torch::Tensor> parameters, float learning_rate)
     : parameters(parameters), learning_rate(learning_rate)

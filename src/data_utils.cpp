@@ -1,111 +1,175 @@
-#include "vision_transforms.h"
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <variant>
-#include <opencv2/opencv.hpp>
-#include <torch/torch.h>
+#include "data_utils.h"
 
-class Dataset
+using TransformResult = std::variant<cv::Mat, torch::Tensor>;
+
+DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle)
+    : dataset(std::move(dataset)), batch_size(batch_size), auto_shuffle(auto_shuffle), gen(rd())
 {
-  public:
-    // Pure virtual method to get dataset size
-    virtual size_t size() const = 0;
+    // Initialize indices
+    indices.resize(this->dataset->size());
+    std::iota(indices.begin(), indices.end(), 0);
+}
 
-    // Pure virtual method to get a single data item at a specific index
-    virtual std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const = 0;
-};
-
-class DataLoader
+DataLoader::Iterator::Iterator(DataLoader &dataloader, size_t index) : dataloader(dataloader), index(index)
 {
-};
+}
 
-class ImageFolder : public Dataset
+Batch DataLoader::Iterator::operator*()
 {
-    // ----------REQUIRED DIRECTORY STRUCTURE----------
-    // path/ <- train / validation dataset folder
-    // class_1/ <- class name as folder name
-    //     image01.jpeg
-    //     image02.jpeg
-    //     ...
-    // class_2/
-    //     image24.jpeg
-    //     image25.jpeg
-    //     ...
-    // class_3/
-    //     image37.jpeg
-    //     ...
-  public:
-    ImageFolder(std::string path)
+    std::vector<torch::Tensor> data;
+    std::vector<torch::Tensor> target;
+    for (size_t i = 0; i < dataloader.batch_size && index + i < dataloader.indices.size(); ++i)
     {
-        int label2idx = 0;
-        for (const auto &entry : std::filesystem::recursive_directory_iterator(path))
-        {
-            if (entry.is_regular_file())
-            {
-                std::string image_path = entry.path().string();
-                std::string class_name = entry.path().parent_path().filename().string();
-
-                // Convert class name to label and store the maping
-                int label = label2idx++;
-                class_to_idx[class_name] = label;
-
-                // Create label tensor
-                torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
-
-                // Store the image and label in the data vector
-                data.push_back(std::make_pair(image_path, label_tensor));
-            }
-        }
+        auto [data_ten, target_ten] = dataloader.dataset->get_item(dataloader.indices[index + i]);
+        data.push_back(data_ten);
+        target.push_back(target_ten);
     }
+    return {torch::stack(data, 0), torch::stack(target, 0)};
+}
 
-    size_t size() const override
+DataLoader::Iterator &DataLoader::Iterator::operator++()
+{
+    index += dataloader.batch_size;
+    return *this;
+}
+
+bool DataLoader::Iterator::operator!=(const Iterator &other) const
+{
+    return index != other.index;
+}
+
+DataLoader::Iterator DataLoader::begin()
+{
+    if (auto_shuffle)
     {
-        return data.size();
+        shuffle();
     }
+    return Iterator(*this, 0);
+}
 
-    std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const override
+DataLoader::Iterator DataLoader::end()
+{
+    return Iterator(*this, indices.size());
+}
+
+void DataLoader::shuffle()
+{
+    std::shuffle(indices.begin(), indices.end(), gen);
+}
+
+BasicDataset::BasicDataset(std::vector<std::pair<torch::Tensor, torch::Tensor>> data) : data(data)
+{
+}
+
+size_t BasicDataset::size() const
+{
+    return data.size();
+}
+
+std::pair<torch::Tensor, torch::Tensor> BasicDataset::get_item(size_t index) const
+{
+    if (index < data.size())
     {
-        if (index < data.size())
+        return data[index];
+    }
+    else
+    {
+        throw std::out_of_range("Index out of range");
+    }
+}
+
+ImageFolder::ImageFolder(std::string path, std::shared_ptr<Transform> const &transform) : transform(transform)
+{
+    int label2idx = 0;
+    if (!transform)
+    {
+        this->transform = std::make_shared<ToTensor>();
+    }
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(path))
+    {
+        if (entry.is_regular_file())
         {
-            // return data[index];
+            std::string image_path = entry.path().string();
+            std::string class_name = entry.path().parent_path().filename().string();
+
+            // Convert class name to label and store the mapping
+            int label = label2idx++;
+            class_to_idx[class_name] = label;
+
+            // Create label tensor
+            torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
+
+            cv::Mat image = cv::imread(image_path);
+            data.push_back({image, label_tensor});
         }
         else
         {
-            throw std::out_of_range("Index out of range");
+            std::cerr << "Couldn't open a file: " << entry.path().string() << std::endl;
         }
     }
+}
 
-    std::unordered_map<std::string, int> class_to_idx;
+size_t ImageFolder::size() const
+{
+    return data.size();
+}
 
-  private:
-    // a vector of ile paths and labels
-    std::vector<std::pair<std::string, torch::Tensor>> data;
-};
+std::pair<torch::Tensor, torch::Tensor> ImageFolder::get_item(size_t index) const
+{
+    if (index >= data.size())
+    {
+        throw std::out_of_range("Index out of range");
+    }
+
+    auto [image, label] = data[index];
+    TransformResult tensor = transform->apply(image);
+
+    if (!std::holds_alternative<torch::Tensor>(tensor))
+    {
+        throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
+    }
+
+    return {std::get<torch::Tensor>(tensor), label};
+}
 
 int main()
 {
-    cv::Mat image = cv::imread("/Users/nonscop/Pictures/cropped-2560-1600-1105295.jpg");
-    std::shared_ptr<Resize> resize1 = std::make_shared<Resize>(Resize(128, 128));
-    std::shared_ptr<Resize> resize2 = std::make_shared<Resize>(Resize(3, 3));
-    std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
-    Compose transforms = Compose{resize1, resize2, totensor};
+    // std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    // for (int i = 0; i < 16; ++i)
+    // {
+    //     data.push_back({torch::zeros(2), torch::zeros(1)});
+    // }
 
-    // cv::imshow("Display window", image);
-    // cv::waitKey(0);
-    // image = std::get<cv::Mat>(resize1(image));
-    // cv::imshow("Display window", image);
-    // cv::waitKey(0);
-    // image = std::get<cv::Mat>(resize2(image));
-    // cv::imshow("Display window", image);
-    // cv::waitKey(0);
+    // std::shared_ptr<BasicDataset> dataset = std::make_shared<BasicDataset>(data);
+    // DataLoader dataloader = DataLoader(dataset, 2, false);
 
-    torch::Tensor t = std::get<torch::Tensor>(transforms(image));
-    std::cout << t << std::endl;
+    // for (auto const &batch : dataloader)
+    // {
+    //     std::cout << batch.data.sizes() << " ";
+    //     std::cout << batch.target.sizes() << std::endl;
+    // }
 
-    // Wait for a key press indefinitely
+    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    for (int i = 0; i < 6; ++i)
+    {
+        data.push_back({torch::tensor({i, i + 1}), torch::zeros(1)});
+    }
 
+    std::shared_ptr<BasicDataset> dataset = std::make_shared<BasicDataset>(data);
+    DataLoader dataloader = DataLoader(dataset, 2);
+
+    for (auto const &batch : dataloader)
+    {
+        std::cout << batch.data << " ";
+        std::cout << batch.target << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    for (auto const &batch : dataloader)
+    {
+        std::cout << batch.data << " ";
+        std::cout << batch.target << std::endl;
+    }
     return 0;
 }

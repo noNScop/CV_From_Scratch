@@ -20,8 +20,8 @@ add_executable(CV_From_Scratch
     src/layers.cpp
     src/vision_transforms.cpp
     src/data_utils.cpp
-    src/models.cpp 
-    src/train.cpp 
+    src/models.cpp
+    src/train.cpp
     src/demo.cpp
 )
 

@@ -1,7 +1,4 @@
 #include "layers.h"
-#include <memory>
-#include <torch/torch.h>
-#include <vector>
 
 Module::Module() : training(true)
 {
