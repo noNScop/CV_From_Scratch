@@ -1,10 +1,10 @@
+#include "data_utils.h"
 #include "layers.h"
 #include "models.h"
 #include "train.h"
-// #include "vision_transforms.h"
-// #include "data_utils.h"
+#include "vision_transforms.h"
 #include <catch2/catch_test_macros.hpp>
-// #include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <torch/torch.h>
 
 TEST_CASE("Linear Layer", "[layers]")
@@ -152,36 +152,69 @@ TEST_CASE("SGD optimizer", "[optimizers]")
     REQUIRE((linear.bias - 2).abs().item<float>() < 0.01);
 }
 
-// TEST_CASE("Compose, Resize and ToTensor transfroms", "[transforms]")
-// {
-//     cv::Mat test_image(224, 320, CV_32F, cv::Scalar(0));
-//     std::shared_ptr<Resize> resize = std::make_shared<Resize>(Resize(3, 3));
-//     std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
-//     Compose transforms = Compose{resize, totensor};
+TEST_CASE("Compose, Resize and ToTensor transfroms", "[transforms]")
+{
+    cv::Mat test_image(224, 320, CV_32F, cv::Scalar(0));
+    std::shared_ptr<Resize> resize = std::make_shared<Resize>(Resize(3, 3));
+    std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
+    Compose transforms = Compose{resize, totensor};
 
-//     torch::Tensor t = std::get<torch::Tensor>(transforms(test_image));
-//     REQUIRE(t.sizes() == torch::IntArrayRef({1, 3, 3}));
-// }
+    torch::Tensor t = std::get<torch::Tensor>(transforms(test_image));
+    REQUIRE(t.sizes() == torch::IntArrayRef({1, 3, 3}));
+}
 
-// TEST_CASE("DataLoader batching", "[dataloader]")
-// {
-//     std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
-//     for (int i = 0; i < 4; ++i)
-//     {
-//         data.push_back({torch::zeros(3), torch::zeros(1)});
-//     }
+TEST_CASE("DataLoader batching", "[dataloader]")
+{
+    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    for (int i = 0; i < 8; ++i)
+    {
+        data.push_back({torch::zeros(3), torch::zeros(1)});
+    }
 
-//     std::shared_ptr<BasicDataset> dataset = std::make_shared<BasicDataset>(data);
-//     DataLoader dataloader = DataLoader(dataset, 2, false);
+    std::shared_ptr<BasicDataset> dataset = std::make_shared<BasicDataset>(data);
+    DataLoader dataloader = DataLoader(dataset, 2, false);
 
-//     for (auto const &batch : dataloader)
-//     {
-//         REQUIRE(batch.data.sizes() == torch::IntArrayRef({2, 3}));
-//         REQUIRE(batch.target.sizes() == torch::IntArrayRef({2, 1}));
-//     }
-// }
+    int number_of_batches = 0;
+    for (auto const &batch : dataloader)
+    {
+        REQUIRE(batch.data.sizes() == torch::IntArrayRef({2, 3}));
+        REQUIRE(batch.target.sizes() == torch::IntArrayRef({2, 1}));
+        ++number_of_batches;
+    }
 
-// TEST_CASE("DataLoader shuffling", "[dataloader]")
-// {
+    REQUIRE(number_of_batches == 4);
+}
 
-// }
+TEST_CASE("DataLoader shuffling", "[dataloader]")
+{
+    // There is a very small chance that this test fails if the same order
+    // is generated twice
+    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    for (int i = 0; i < 100; ++i)
+    {
+        data.push_back({torch::tensor({i, i + 1}), torch::zeros(1)});
+    }
+
+    std::shared_ptr<BasicDataset> dataset = std::make_shared<BasicDataset>(data);
+    DataLoader dataloader = DataLoader(dataset, 2);
+
+    std::vector<torch::Tensor> first_cycle;
+    for (auto const &batch : dataloader)
+    {
+        first_cycle.push_back(batch.data);
+    }
+
+    int idx = 0;
+    bool flag = false;
+
+    for (auto const &batch : dataloader)
+    {
+        if (!first_cycle[idx++].equal(batch.data))
+        {
+            flag = true;
+            break;
+        }
+    }
+
+    REQUIRE(flag);
+}
