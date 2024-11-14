@@ -5,6 +5,10 @@
 #include "vision_transforms.h"
 #include <iostream>
 
+#ifndef DATA_DIR
+#define DATA_DIR "./data" // Fallback if DATA_DIR is not defined
+#endif
+
 int main()
 {
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
@@ -12,9 +16,9 @@ int main()
     // Initialize dataset by providing the path to the MNIST data directory
     std::unordered_map<std::string, int> class_to_idx;
     // Adjust this path if necessary
-    std::string mnist_train_path = "/Users/nonscop/Desktop/CV_From_Scratch/data/training";
+    std::string mnist_train_path = std::string(DATA_DIR) + "/training";
     // Adjust this path if necessary
-    std::string mnist_valid_path = "/Users/nonscop/Desktop/CV_From_Scratch/data/testing";
+    std::string mnist_valid_path = std::string(DATA_DIR) + "/testing";
     // Create datasets
     std::shared_ptr<ImageFolder> train_ds = std::make_shared<ImageFolder>(mnist_train_path, class_to_idx);
     std::shared_ptr<ImageFolder> valid_ds = std::make_shared<ImageFolder>(mnist_valid_path, class_to_idx);

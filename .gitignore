@@ -1,5 +1,7 @@
 build/
-lib/
+lib/Catch2
+lib/libtorch
+lib/opencv
 data/
 
 .vscode

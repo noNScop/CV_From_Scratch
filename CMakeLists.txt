@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(CV_From_Scratch)
 
+# Define the base data directory relative to the CMakeLists.txt file
+set(DATA_DIR "${CMAKE_SOURCE_DIR}/data")
+
+# Pass the data directory as a preprocessor definition
+add_definitions(-DDATA_DIR="${DATA_DIR}")
+
 set(CMAKE_PREFIX_PATH
     "${CMAKE_SOURCE_DIR}/lib/libtorch"
     "${CMAKE_SOURCE_DIR}/lib/Catch2"
