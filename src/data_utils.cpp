@@ -8,7 +8,8 @@ DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool
     // Initialize indices
     indices.resize(this->dataset->size());
     std::iota(indices.begin(), indices.end(), 0);
-    last_batch_start_index = indices.size() + (indices.size() % batch_size);
+    // Calculate last index + 1, that serves as a stopping condition in Iterator of Dataloader
+    last_batch_end_index = indices.size() + (indices.size() % batch_size);
 }
 
 DataLoader::Iterator::Iterator(DataLoader &dataloader, size_t index) : dataloader(dataloader), index(index)
@@ -21,10 +22,12 @@ Batch DataLoader::Iterator::operator*()
     std::vector<torch::Tensor> target;
     for (size_t i = 0; i < dataloader.batch_size && index + i < dataloader.indices.size(); ++i)
     {
+        // data and target tensors
         auto [data_ten, target_ten] = dataloader.dataset->get_item(dataloader.indices[index + i]);
         data.push_back(data_ten);
         target.push_back(target_ten);
     }
+    // stack tensors into batches
     return {torch::stack(data, 0), torch::stack(target, 0)};
 }
 
@@ -50,7 +53,7 @@ DataLoader::Iterator DataLoader::begin()
 
 DataLoader::Iterator DataLoader::end()
 {
-    return Iterator(*this, last_batch_start_index);
+    return Iterator(*this, last_batch_end_index);
 }
 
 void DataLoader::shuffle()
@@ -79,9 +82,15 @@ std::pair<torch::Tensor, torch::Tensor> BasicDataset::get_item(size_t index) con
     }
 }
 
-ImageFolder::ImageFolder(std::string path, std::shared_ptr<Transform> const &transform) : transform(transform)
+// Right now it is loading and preprocessing all files during inicialisation, it wouldn't make sense
+// with most data augmentation or bigger datasets, but in this particular case it speeds up the training
+// and changing it to preprocessing on run is all about moving few lines from initialisation to apply method
+ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> &class_to_idx,
+                         std::shared_ptr<Transform> const &transform)
+    : transform(transform), class_to_idx(class_to_idx)
 {
-    int label2idx = 0;
+    int label2idx = class_to_idx.size();
+    std::unordered_set<std::string> class_names;
     if (!transform)
     {
         this->transform = std::make_shared<ToTensor>();
@@ -92,6 +101,14 @@ ImageFolder::ImageFolder(std::string path, std::shared_ptr<Transform> const &tra
         {
             std::string image_path = entry.path().string();
             std::string class_name = entry.path().parent_path().filename().string();
+            std::string file_name = entry.path().filename().string();
+
+            // Ignore files starting with a dot, e.g. .DS_Store - that would crash the program later
+            if (file_name[0] == '.')
+            {
+                std::cout << "Ignoring hidden file: " << file_name << std::endl;
+                continue;
+            }
 
             // Convert class name to label and store the mapping
             int label;
@@ -109,14 +126,14 @@ ImageFolder::ImageFolder(std::string path, std::shared_ptr<Transform> const &tra
             torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
 
             cv::Mat image = cv::imread(image_path, cv::IMREAD_UNCHANGED);
-            
+
             TransformResult tensor = this->transform->apply(image);
 
             if (!std::holds_alternative<torch::Tensor>(tensor))
             {
                 throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
             }
-            
+
             data.push_back({std::get<torch::Tensor>(tensor), label_tensor});
         }
         else if (!entry.is_directory())

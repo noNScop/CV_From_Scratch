@@ -57,6 +57,7 @@ class DataLoader
 
     Iterator end();
 
+    // shuffles the indices vector
     void shuffle();
 
   private:
@@ -64,7 +65,8 @@ class DataLoader
     size_t batch_size;
     bool auto_shuffle;
     std::vector<size_t> indices;
-    size_t last_batch_start_index;
+    // actually last batch end index + 1, serves as the ending condition in Iterator of Dataloader
+    size_t last_batch_end_index;
     std::random_device rd;
     std::default_random_engine gen;
 };
@@ -83,12 +85,15 @@ class BasicDataset : public Dataset
     std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
 };
 
+// Right now it is loading and preprocessing all files during inicialisation, it wouldn't make sense
+// with most data augmentation or bigger datasets, but in this particular case it speeds up the training
+// and changing it to preprocessing on run is all about moving few lines from initialisation to apply method
 class ImageFolder : public Dataset
 {
     // ----------REQUIRED DIRECTORY STRUCTURE----------
     // path/ <- train / validation dataset folder
     // class_1/ <- class name as folder name
-    //     image01.jpeg
+    //     image01.jpeg <- not necessarily .jpeg
     //     image02.jpeg
     //     ...
     // class_2/
@@ -99,16 +104,17 @@ class ImageFolder : public Dataset
     //     image37.jpeg
     //     ...
   public:
-    ImageFolder(std::string path, std::shared_ptr<Transform> const &transform = nullptr);
+    ImageFolder(std::string path, std::unordered_map<std::string, int> &class_to_idx,
+                std::shared_ptr<Transform> const &transform = nullptr);
 
     size_t size() const override;
 
     std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const override;
 
-    std::unordered_map<std::string, int> class_to_idx;
+    std::unordered_map<std::string, int> &class_to_idx;
 
   private:
-    // a vector of file paths and labels
+    // a vector of tensors and targets
     std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
     std::shared_ptr<Transform> transform;
 };

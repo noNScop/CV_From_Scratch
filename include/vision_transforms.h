@@ -19,6 +19,7 @@ class Transform
     template <typename... Args> TransformResult operator()(Args &&...args);
 };
 
+// A class to compose multiple Transforms into one
 class Compose : public Transform
 {
   public:
@@ -30,12 +31,14 @@ class Compose : public Transform
     std::vector<std::shared_ptr<Transform>> transforms;
 };
 
+// Transforms cv::Mat to tensor
 class ToTensor : public Transform
 {
   public:
     TransformResult apply(cv::Mat image) override;
 };
 
+// Resizes cv::Mat to any shape
 class Resize : public Transform
 {
   public:

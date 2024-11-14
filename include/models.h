@@ -8,6 +8,10 @@
 // MnistCNN expects inputs of (batch_size, 1, 28, 28), as mnist images have a single color channel
 class MnistCNN : public Module
 {
+  public:
+    torch::Tensor forward(torch::Tensor x) override;
+
+  private:
     std::shared_ptr<Sequential> conv_block(int in_channels, int out_channels, int kernel_size = 3,
                                            bool activation = true);
 
@@ -18,8 +22,6 @@ class MnistCNN : public Module
         conv_block(32, 64),           // 2 x 2
         conv_block(64, 10, 3, false), // 1 x 1
     });
-
-    torch::Tensor forward(torch::Tensor x) override;
 };
 
 #endif

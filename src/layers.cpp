@@ -4,7 +4,9 @@ Module::Module() : training(true)
 {
 }
 
-// Save the state dictionary to a map
+// Returns state dictionary with parameters as  a map, right now in an initial state,
+// it is supposed to be used for saving tensors, although it may not have all functionality
+// required just yet
 std::map<std::string, torch::Tensor> Module::state_dict() const
 {
     std::map<std::string, torch::Tensor> state;
@@ -210,7 +212,6 @@ Sequential::Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
 
 torch::Tensor Sequential::forward(torch::Tensor x)
 {
-    // std::vector<std::shared_ptr<Module>> children;
     for (const std::shared_ptr<Module> &module : get_children())
     {
         x = module->forward(x);

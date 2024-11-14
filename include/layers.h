@@ -11,7 +11,9 @@ class Module
   public:
     Module();
 
-    // Returns state dictionary with parameters as a map
+    // Returns state dictionary with parameters as  a map, right now in an initial state,
+    // it is supposed to be used for saving tensors, although it may not have all functionality
+    // required just yet
     std::map<std::string, torch::Tensor> state_dict() const;
 
     // training getter
@@ -29,7 +31,6 @@ class Module
     // Overloading operator() to mimic Python's __call__
     template <typename... Args> torch::Tensor operator()(Args &&...args); // perfect forwarding
 
-    // pure virtual method is overridden by derived class
     virtual torch::Tensor forward(torch::Tensor x) = 0;
 
   protected:
@@ -85,6 +86,7 @@ class Conv2d : public Module
     int output_height;
 };
 
+// Batch normalization layer
 class BatchNorm2d : public Module
 {
   public:

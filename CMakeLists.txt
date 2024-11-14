@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(CV_From_Scratch)
 
 set(CMAKE_PREFIX_PATH
-"/Users/nonscop/Desktop/CV_From_Scratch/lib/libtorch"
-"/Users/nonscop/Desktop/CV_From_Scratch/lib/Catch2"
-"/Users/nonscop/Desktop/CV_From_Scratch/lib/opencv/build"
+    "${CMAKE_SOURCE_DIR}/lib/libtorch"
+    "${CMAKE_SOURCE_DIR}/lib/Catch2"
+    "${CMAKE_SOURCE_DIR}/lib/opencv/build"
 )
 
 find_package(Torch REQUIRED)
