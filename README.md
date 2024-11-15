@@ -2,6 +2,15 @@
 
 **CV_From_Scratch** is a project where I implemented a **PyTorch-like library in C++** for **Computer Vision** tasks. This library includes layers, a CNN architecture, a `Learner` class, data loaders, and basic image transforms, all from scratch. The project uses **OpenCV** for image processing and **LibTorch** (temporarily) for tensor operations. My colleague will later replace LibTorch with a custom tensor implementation.
 
+## Branches
+Currently, there are two branches:
+
+-	main:
+This branch processes images by converting them into tensors during initialization, resulting in faster training times (initial loading takes 2-3 minutes, but each epoch takes ~15 seconds). However, due to potential segmentation faults when handling many tensors with LibTorch on macOS, this branch may fail under certain circumstances.
+
+-	stable:
+This branch uses a more conventional approach, where image paths are stored during initialization and images are processed on-the-fly during runtime. While this method is slower (each epoch takes about 2 minutes), it may be more stable on systems experiencing issues with LibTorch.
+
 ## Features
 - Implemented CNN architecture and layers from scratch in C++.
 - DataLoader and Datasets with basic transformations using OpenCV.

@@ -82,9 +82,10 @@ std::pair<torch::Tensor, torch::Tensor> BasicDataset::get_item(size_t index) con
     }
 }
 
-// Right now it is loading and preprocessing all files during inicialisation, it wouldn't make sense
-// with most data augmentation or bigger datasets, but in this particular case it speeds up the training
-// and changing it to preprocessing on run is all about moving few lines from initialisation to apply method
+// In this version it is processing and transforming images in get_item method, which is more STABLE but SLOWER
+// than doing it for all images during initialisation of ImageFolder Dataset, for FASTER PERFORMANCE on MNIST dataset 
+// checkout to "final code" commit, however it is LESS STABLE and sometimes segmentation fault occurs during 
+// initialisation of ImageFolder Dataset
 ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> &class_to_idx,
                          std::shared_ptr<Transform> const &transform)
     : transform(transform), class_to_idx(class_to_idx)
@@ -125,16 +126,7 @@ ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> 
             // Create label tensor
             torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
 
-            cv::Mat image = cv::imread(image_path, cv::IMREAD_UNCHANGED);
-
-            TransformResult tensor = this->transform->apply(image);
-
-            if (!std::holds_alternative<torch::Tensor>(tensor))
-            {
-                throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
-            }
-
-            data.push_back({std::get<torch::Tensor>(tensor), label_tensor});
+            data.push_back({image_path, label_tensor});
         }
         else if (!entry.is_directory())
         {
@@ -154,6 +146,16 @@ std::pair<torch::Tensor, torch::Tensor> ImageFolder::get_item(size_t index) cons
     {
         throw std::out_of_range("Index out of range");
     }
+    auto [image_path, label] = data[index];
 
-    return data[index];
+    cv::Mat image = cv::imread(image_path, cv::IMREAD_UNCHANGED);
+
+    TransformResult tensor = transform->apply(image);
+
+    if (!std::holds_alternative<torch::Tensor>(tensor))
+    {
+        throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
+    }
+
+    return {std::get<torch::Tensor>(tensor), label};
 }

@@ -12,7 +12,6 @@
 int main()
 {
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
-    std::cout << "Loading data, it can take a couple of minutes...\n";
     // Initialize dataset by providing the path to the MNIST data directory
     std::unordered_map<std::string, int> class_to_idx;
     // Adjust this path if necessary

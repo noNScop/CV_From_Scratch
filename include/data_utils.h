@@ -85,9 +85,10 @@ class BasicDataset : public Dataset
     std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
 };
 
-// Right now it is loading and preprocessing all files during inicialisation, it wouldn't make sense
-// with most data augmentation or bigger datasets, but in this particular case it speeds up the training
-// and changing it to preprocessing on run is all about moving few lines from initialisation to apply method
+// In this version it is processing and transforming images in get_item method, which is more STABLE but SLOWER
+// than doing it for all images during initialisation of ImageFolder Dataset, for FASTER PERFORMANCE on MNIST dataset 
+// checkout to "final code" commit, however it is LESS STABLE and sometimes segmentation fault occurs during 
+// initialisation of ImageFolder Dataset
 class ImageFolder : public Dataset
 {
     // ----------REQUIRED DIRECTORY STRUCTURE----------
@@ -114,8 +115,8 @@ class ImageFolder : public Dataset
     std::unordered_map<std::string, int> &class_to_idx;
 
   private:
-    // a vector of tensors and targets
-    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    // a vector of data paths and targets
+    std::vector<std::pair<std::string, torch::Tensor>> data;
     std::shared_ptr<Transform> transform;
 };
 
