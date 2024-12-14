@@ -7,6 +7,7 @@
 #include <opencv2/opencv.hpp>
 #include <random>
 #include <string>
+#include <thread>
 #include <torch/torch.h>
 #include <unordered_map>
 #include <variant>
@@ -35,7 +36,7 @@ class Dataset
 class DataLoader
 {
   public:
-    DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle = true);
+    DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle = true, unsigned short num_workers = 10);
 
     class Iterator
     {
@@ -64,6 +65,7 @@ class DataLoader
     std::shared_ptr<Dataset> dataset;
     size_t batch_size;
     bool auto_shuffle;
+    unsigned short num_workers;
     std::vector<size_t> indices;
     // actually last batch end index + 1, serves as the ending condition in Iterator of Dataloader
     size_t last_batch_end_index;
@@ -86,8 +88,8 @@ class BasicDataset : public Dataset
 };
 
 // In this version it is processing and transforming images in get_item method, which is more STABLE but SLOWER
-// than doing it for all images during initialisation of ImageFolder Dataset, for FASTER PERFORMANCE on MNIST dataset 
-// checkout to "final code" commit, however it is LESS STABLE and sometimes segmentation fault occurs during 
+// than doing it for all images during initialisation of ImageFolder Dataset, for FASTER PERFORMANCE on MNIST dataset
+// checkout to "final code" commit, however it is LESS STABLE and sometimes segmentation fault occurs during
 // initialisation of ImageFolder Dataset
 class ImageFolder : public Dataset
 {

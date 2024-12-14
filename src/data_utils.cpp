@@ -2,8 +2,8 @@
 
 using TransformResult = std::variant<cv::Mat, torch::Tensor>;
 
-DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle)
-    : dataset(std::move(dataset)), batch_size(batch_size), auto_shuffle(auto_shuffle), gen(rd())
+DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle, unsigned short num_workers)
+    : dataset(std::move(dataset)), batch_size(batch_size), auto_shuffle(auto_shuffle), num_workers(num_workers), gen(rd())
 {
     // Initialize indices
     indices.resize(this->dataset->size());
@@ -18,15 +18,32 @@ DataLoader::Iterator::Iterator(DataLoader &dataloader, size_t index) : dataloade
 
 Batch DataLoader::Iterator::operator*()
 {
-    std::vector<torch::Tensor> data;
-    std::vector<torch::Tensor> target;
-    for (size_t i = 0; i < dataloader.batch_size && index + i < dataloader.indices.size(); ++i)
+    // the last batch can be smaller than dataloader.batch_size
+    size_t batch_size = std::min(dataloader.batch_size, dataloader.indices.size() - index);
+    std::vector<torch::Tensor> data(batch_size);
+    std::vector<torch::Tensor> target(batch_size);
+    
+    // No mutex is needed because threads are accessing different elements inside the vector
+    auto process_batch = [&](size_t start) {
+        for (size_t i = start; i < batch_size; i += dataloader.num_workers)
+        {
+            auto [data_ten, target_ten] = dataloader.dataset->get_item(dataloader.indices[index + i]);
+            data[i] = data_ten;
+            target[i] = target_ten;
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < dataloader.num_workers; ++i)
     {
-        // data and target tensors
-        auto [data_ten, target_ten] = dataloader.dataset->get_item(dataloader.indices[index + i]);
-        data.push_back(data_ten);
-        target.push_back(target_ten);
+        threads.emplace_back(process_batch, i);
     }
+
+    for (auto &thread : threads)
+    {
+        thread.join();
+    }
+
     // stack tensors into batches
     return {torch::stack(data, 0), torch::stack(target, 0)};
 }
