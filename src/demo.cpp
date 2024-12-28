@@ -87,38 +87,53 @@ int main()
 
             Learner learn = Learner(model);
             learn.train(train_dl, valid_dl, epochs);
-            break;
         }
+        break;
         case 2: // Saving weights
+        {
+            std::string save_path;
+            std::cout << "Enter the path to save the model: ";
+            std::cin >> save_path;
+            
+            std::ofstream file(save_path, std::ios::binary);
+            if (!file.is_open())
             {
-                std::string save_path;
-                std::cout << "Enter the path to save the model: ";
-                std::cin >> save_path;
-                std::ofstream file(save_path, std::ios::binary); 
-                if (!file.is_open())
-                {
-                    throw std::ios_base::failure("Failed to open file for saving.");
-                }
-                cereal::BinaryOutputArchive archive_save(file);
-                archive_save(model);
-                std::cout << "Saved the model to: " << save_path << "\n";
+                std::cerr << "Failed to open file for saving." << std::endl;
+                break;
             }
-            break;
+
+            cereal::BinaryOutputArchive archive_save(file);
+            archive_save(model);
+            std::cout << "Saved the model to: " << save_path << "\n";
+        }
+        break;
         case 3: // Loading weights
+        {
+            std::string load_path;
+            std::cout << "Enter the path to load the model: ";
+            std::cin >> load_path;
+
+            std::ifstream file(load_path, std::ios::binary);
+            if (!file.is_open())
             {
-                std::string load_path;
-                std::cout << "Enter the path to load the model: ";
-                std::cin >> load_path;
-                std::ifstream file(load_path, std::ios::binary);
-                if (!file.is_open())
-                {
-                    throw std::ios_base::failure("Failed to open file for loading.");
-                }
-                cereal::BinaryInputArchive archive(file); 
-                archive(model);
-                std::cout << "Loaded the model from: " << load_path << "\n";
+                std::cerr << "Failed to open file for loading." << std::endl;
+                break;
             }
-            break;
+
+            try
+            {
+                cereal::BinaryInputArchive archive(file);
+                archive(model);
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Error reading model data: " << e.what() << std::endl;
+                break;
+            }
+
+            std::cout << "Loaded the model from: " << load_path << "\n";
+        }
+        break;
         case 4: // Inference
         {
             cv::Mat image;
@@ -159,14 +174,13 @@ int main()
                 "\nPrediction: " + prediction + ", Confidence: " + std::to_string(confidence[{0}]);
 
             std::cout << output_message << std::endl;
-            break;
         }
+        break;
         case 5:
             std::cout << "Exiting..." << std::endl;
             return 0;
         default:
             std::cout << "Invalid choice. Please select a valid option." << std::endl;
-            break;
         }
     }
 }
