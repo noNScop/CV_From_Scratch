@@ -8,17 +8,17 @@
 #include <random>
 #include <string>
 #include <thread>
-#include <torch/torch.h>
+#include "tensor.h"
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
-using TransformResult = std::variant<cv::Mat, torch::Tensor>;
+using TransformResult = std::variant<cv::Mat, Tensor<float>>;
 
 struct Batch
 {
-    torch::Tensor data;
-    torch::Tensor target;
+    Tensor<float> data;
+    Tensor<int> target;
 };
 
 class Dataset
@@ -28,7 +28,7 @@ class Dataset
     virtual size_t size() const = 0;
 
     // Pure virtual method to get a single data item at a specific index
-    virtual std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const = 0;
+    virtual std::pair<Tensor<float>, Tensor<int>> get_item(size_t index) const = 0;
 };
 
 // begin() must be called for auto shuffle, therefore it is preffered to use Dataloader like this:
@@ -77,14 +77,14 @@ class DataLoader
 class BasicDataset : public Dataset
 {
   public:
-    BasicDataset(std::vector<std::pair<torch::Tensor, torch::Tensor>> data);
+    BasicDataset(std::vector<std::pair<Tensor<float>, Tensor<int>>> data);
 
     size_t size() const override;
 
-    std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const override;
+    std::pair<Tensor<float>, Tensor<int>> get_item(size_t index) const override;
 
   private:
-    std::vector<std::pair<torch::Tensor, torch::Tensor>> data;
+    std::vector<std::pair<Tensor<float>, Tensor<int>>> data;
 };
 
 // In this version it is processing and transforming images in get_item method, which is more STABLE but SLOWER
@@ -112,13 +112,13 @@ class ImageFolder : public Dataset
 
     size_t size() const override;
 
-    std::pair<torch::Tensor, torch::Tensor> get_item(size_t index) const override;
+    std::pair<Tensor<float>, Tensor<int>> get_item(size_t index) const override;
 
     std::unordered_map<std::string, int> &class_to_idx;
 
   private:
     // a vector of data paths and targets
-    std::vector<std::pair<std::string, torch::Tensor>> data;
+    std::vector<std::pair<std::string, Tensor<int>>> data;
     std::shared_ptr<Transform> transform;
 };
 

@@ -5,12 +5,12 @@
 #include "layers.h"
 #include "models.h"
 #include <iostream>
-#include <torch/torch.h>
+#include "tensor.h"
 
 class Optimizer
 {
   public:
-    Optimizer(std::vector<torch::Tensor> parameters, float learning_rate);
+    Optimizer(std::vector<Tensor<float>> parameters, float learning_rate);
 
     float learning_rate;
 
@@ -19,19 +19,19 @@ class Optimizer
     virtual void step() = 0;
 
   protected:
-    std::vector<torch::Tensor> parameters;
+    std::vector<Tensor<float>> parameters;
 };
 
 class SGD : public Optimizer
 {
   public:
-    SGD(std::vector<torch::Tensor> parameters, float learning_rate = 0.01, float momentum = 0.9);
+    SGD(std::vector<Tensor<float>> parameters, float learning_rate = 0.01, float momentum = 0.9);
 
     void step() override;
 
   private:
     float momentum;
-    std::vector<torch::Tensor> ema; // exponential moving average
+    std::vector<Tensor<float>> ema; // exponential moving average
 };
 
 class Learner
@@ -50,8 +50,8 @@ class Learner
     int train_iters;
     int valid_iters;
 
-    torch::Tensor output;
-    torch::Tensor loss;
+    Tensor<float> output;
+    Tensor<float> loss;
 
     void train_step(DataLoader &train_dl, SGD &optimizer);
 

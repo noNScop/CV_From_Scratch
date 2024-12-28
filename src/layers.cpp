@@ -7,9 +7,9 @@ Module::Module() : training(true)
 // Returns state dictionary with parameters as  a map, right now in an initial state,
 // it is supposed to be used for saving tensors, although it may not have all functionality
 // required just yet
-std::map<std::string, torch::Tensor> Module::state_dict() const
+std::map<std::string, Tensor<float>> Module::state_dict() const
 {
-    std::map<std::string, torch::Tensor> state;
+    std::map<std::string, Tensor<float>> state;
     int i = 0;
     for (const auto &param : params)
     {
@@ -45,10 +45,10 @@ void Module::set_training(bool train)
 }
 
 // Get all parameters recursively
-std::vector<torch::Tensor> Module::parameters() const
+std::vector<Tensor<float>> Module::parameters() const
 {
     // copy params, to safely add params from children
-    std::vector<torch::Tensor> all_params = params;
+    std::vector<Tensor<float>> all_params = params;
     // auto = std::shared_ptr<Module>
     for (const auto &child : children)
     {
@@ -65,7 +65,7 @@ std::vector<std::shared_ptr<Module>> Module::get_children() const
 }
 
 // params setter
-void Module::register_parameters(const std::initializer_list<torch::Tensor> parameters)
+void Module::register_parameters(const std::initializer_list<Tensor<float>> parameters)
 {
     params.insert(params.end(), parameters.begin(), parameters.end());
 }
@@ -77,24 +77,24 @@ void Module::register_modules(const std::initializer_list<std::shared_ptr<Module
 }
 
 // ni - number of input features, nf - number of output features
-Linear::Linear(int in_channels, int out_channels, bool use_xavier, bool use_bias) : use_bias(use_bias)
+Linear::Linear(int in_channels, int out_channels, bool use_xavier, bool use_bias)
+    : use_bias(use_bias)
 {
-    weights = torch::zeros({out_channels, in_channels}, torch::requires_grad(true));
-
+    std::vector<size_t> shape = {static_cast<size_t>(out_channels), static_cast<size_t>(in_channels)};
     // xavier is best for sigmoid, tanh, softmax activations
     // kaiming is best for ReLU
     if (use_xavier)
     {
-        torch::nn::init::xavier_normal_(weights);
+        weights = Tensor<float>::xavier_normal(shape, 1, true);
     }
     else // use kaiming
     {
-        torch::nn::init::kaiming_normal_(weights);
+        weights = Tensor<float>::kaiming_normal(shape, true);
     }
 
     if (use_bias)
     {
-        bias = torch::zeros({out_channels}, torch::requires_grad(true));
+        bias = Tensor<float>::zeros({static_cast<size_t>(out_channels)}, true);
         register_parameters({weights, bias});
     }
     else
@@ -103,15 +103,18 @@ Linear::Linear(int in_channels, int out_channels, bool use_xavier, bool use_bias
     }
 }
 
-torch::Tensor Linear::forward(torch::Tensor x)
+Tensor<float> Linear::forward(Tensor<float> x)
 {
     if (use_bias)
     {
-        return torch::matmul(x, weights.t()) + bias;
+        Tensor<float> transpose = weights.transpose(0, 1);
+        Tensor<float> mul = Tensor<float>::matmul(x, transpose);
+        return mul + bias;
     }
     else
     {
-        return torch::matmul(x, weights.t());
+        Tensor<float> transpose = weights.transpose(0, 1);
+        return Tensor<float>::matmul(x, transpose);
     }
 }
 
@@ -119,22 +122,26 @@ Conv2d::Conv2d(int in_channels, int out_channels, int kernel_size, int stride, i
                bool use_bias)
     : out_channels(out_channels), kernel_size(kernel_size), stride(stride), padding(padding), use_bias(use_bias)
 {
-    weights = torch::zeros({out_channels, in_channels, kernel_size, kernel_size}, torch::requires_grad(true));
-
+    std::vector<size_t> shape = {
+        static_cast<size_t>(out_channels), 
+        static_cast<size_t>(in_channels), 
+        static_cast<size_t>(kernel_size), 
+        static_cast<size_t>(kernel_size)
+    };
     // xavier is best for sigmoid, tanh, softmax activations
     // kaiming is best for ReLU
     if (use_xavier)
     {
-        torch::nn::init::xavier_normal_(weights);
+        weights = Tensor<float>::xavier_normal(shape, 1, true);
     }
     else // use kaiming
     {
-        torch::nn::init::kaiming_normal_(weights);
+        weights = Tensor<float>::kaiming_normal(shape, true);
     }
 
     if (use_bias)
     {
-        bias = torch::zeros({out_channels}, torch::requires_grad(true));
+        bias = Tensor<float>::zeros({static_cast<size_t>(out_channels)}, true);
         register_parameters({weights, bias});
     }
     else
@@ -143,24 +150,24 @@ Conv2d::Conv2d(int in_channels, int out_channels, int kernel_size, int stride, i
     }
 }
 
-torch::Tensor Conv2d::forward(torch::Tensor x)
+Tensor<float> Conv2d::forward(Tensor<float> x)
 {
-    namespace F = torch::nn::functional;
-
-    batch_size = x.sizes()[0];
-    height = x.sizes()[2];
-    width = x.sizes()[3];
+    batch_size = x.size()[0];
+    height = x.size()[2];
+    width = x.size()[3];
 
     // unfold creates tensor that allows applying convolution by matrix multiplication with flattened kernels
-    x = F::unfold(x, F::UnfoldFuncOptions({kernel_size, kernel_size}).padding(padding).stride(stride));
-    x = torch::matmul(weights.view({out_channels, -1}), x); // flatten the weights
+    x = Tensor<float>::unfold(x, kernel_size, padding, stride);
+    Tensor<float> weights_view = weights.view({out_channels, -1});
+    x = Tensor<float>::matmul(weights_view, x); // flatten the weights
 
     output_height = (int)((height + 2 * padding - kernel_size) / stride) + 1;
     x = x.view({batch_size, out_channels, output_height, -1});
 
     if (use_bias)
     {
-        x = x + bias.view({1, out_channels, 1, 1});
+        Tensor<float> bias_view = bias.view({1, out_channels, 1, 1});
+        x = x + bias_view;
     }
 
     return x;
@@ -172,37 +179,54 @@ BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momen
     // initialising gamma with zeros is usefull for residual connections
     if (zero_init)
     {
-        gamma = torch::zeros({in_channels}, torch::requires_grad(true));
+        gamma = Tensor<float>::zeros({static_cast<size_t>(in_channels)}, true);
     }
     else
     {
-        gamma = torch::ones({in_channels}, torch::requires_grad(true));
+        gamma = Tensor<float>::ones({static_cast<size_t>(in_channels)}, true);
     }
 
-    beta = torch::zeros({in_channels}, torch::requires_grad(true));
-    running_mean = torch::zeros({in_channels});
-    running_var = torch::zeros({in_channels});
+    beta = Tensor<float>::zeros({static_cast<size_t>(in_channels)}, true);
+    running_mean = Tensor<float>::zeros({static_cast<size_t>(in_channels)});
+    running_var = Tensor<float>::zeros({static_cast<size_t>(in_channels)});
     register_parameters({gamma, beta});
 }
 
-torch::Tensor BatchNorm2d::forward(torch::Tensor x)
+Tensor<float> BatchNorm2d::forward(Tensor<float> x)
 {
     if (is_training())
     {
         // calculate statistics for each channel across batch and spatial dimensions
         mean = x.mean({0, 2, 3}, true); // keepdim = true
-        var = x.var({0, 2, 3});
-        x = (x - mean) / (var.view({1, -1, 1, 1}) + eps).sqrt();
+        var = x.var({0, 2, 3}, false);
+        Tensor<float> var_view = var.view({1, -1, 1, 1});
+        Tensor<float> var_plus_eps = var_view + eps;
+        Tensor<float> sqrt_var_plus_eps = var_plus_eps.sqrt();
+        Tensor<float> x_minus_mean = x - mean;
+        x = x_minus_mean / sqrt_var_plus_eps;
 
-        running_mean = (1 - momentum) * running_mean + momentum * mean.view({in_channels});
-        running_var = (1 - momentum) * running_var + momentum * var;
+        Tensor<float> mean_view = mean.view({in_channels});
+        Tensor<float> momentum_times_mean = mean_view * momentum;
+        Tensor<float> temp = running_mean * (1 - momentum);
+        running_mean = temp + momentum_times_mean;
+
+        Tensor<float> momentum_times_var = var * momentum;
+        Tensor<float> temp2 = running_var * (1 - momentum);
+        running_var = temp2 + momentum_times_var;
     }
     else
     {
-        x = (x - running_mean.view({1, in_channels, 1, 1})) / (running_var.view({1, in_channels, 1, 1}) + eps).sqrt();
+        Tensor<float> r_var_view = running_var.view({1, in_channels, 1, 1});
+        Tensor<float> r_var_plus_eps = r_var_view + eps;
+        Tensor<float> sqrt_r_var_plus_eps = r_var_plus_eps.sqrt();
+        Tensor<float> r_mean_view = running_mean.view({1, in_channels, 1, 1});
+        Tensor<float> x_minus_r_mean = x - r_mean_view;
+        x = x_minus_r_mean / sqrt_r_var_plus_eps;
     }
-
-    return gamma.view({1, in_channels, 1, 1}) * x + beta.view({1, in_channels, 1, 1});
+    Tensor<float> gamma_view = gamma.view({1, in_channels, 1, 1});
+    Tensor<float> beta_view = beta.view({1, in_channels, 1, 1});
+    Tensor<float> mul = gamma_view * x;
+    return mul + beta_view;
 }
 
 Sequential::Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
@@ -210,7 +234,7 @@ Sequential::Sequential(std::initializer_list<std::shared_ptr<Module>> layers)
     register_modules(layers);
 }
 
-torch::Tensor Sequential::forward(torch::Tensor x)
+Tensor<float> Sequential::forward(Tensor<float> x)
 {
     for (const std::shared_ptr<Module> &module : get_children())
     {
@@ -220,8 +244,7 @@ torch::Tensor Sequential::forward(torch::Tensor x)
     return x;
 }
 
-torch::Tensor ReLU::forward(torch::Tensor x)
+Tensor<float> ReLU::forward(Tensor<float> x)
 {
-    namespace F = torch::nn::functional;
-    return F::relu(x);
+    return Tensor<float>::relu(x);
 }

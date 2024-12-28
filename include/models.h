@@ -3,13 +3,13 @@
 
 #include "layers.h"
 #include <memory>
-#include <torch/torch.h>
+#include "tensor.h"
 
 // MnistCNN expects inputs of (batch_size, 1, 28, 28), as mnist images have a single color channel
 class MnistCNN : public Module
 {
   public:
-    torch::Tensor forward(torch::Tensor x) override;
+    Tensor<float> forward(Tensor<float> x) override;
 
   private:
     std::shared_ptr<Sequential> conv_block(int in_channels, int out_channels, int kernel_size = 3,

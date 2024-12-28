@@ -117,16 +117,19 @@ int main()
             std::shared_ptr<ToTensor> totensor = std::make_shared<ToTensor>();
             Compose transform({resize, totensor});
 
-            torch::Tensor img_tensor = std::get<torch::Tensor>(transform(image)).view({1, 1, 28, 28});
+            Tensor<float> img_tensor = std::get<Tensor<float>>(transform(image)).view({1, 1, 28, 28});
 
             model->set_training(false);
-            torch::NoGradGuard no_grad;
+            // torch::NoGradGuard no_grad;
             auto output = model->forward(img_tensor);
-            std::string prediction = idx_to_class[output.argmax(1).item<int>()];
-            auto confidence = torch::max(torch::softmax(output, 1));
+            Tensor<float> curr_batch = output[{{0, 1}}];
+            Tensor<int> argmax = curr_batch.argmax();
+            std::string prediction = idx_to_class[argmax[{0}]];
+            Tensor<float> softmax_out = Tensor<float>::softmax(output, 1);
+            auto confidence = softmax_out.max();
 
             std::string output_message =
-                "\nPrediction: " + prediction + ", Confidence: " + std::to_string(confidence.item<float>());
+                "\nPrediction: " + prediction + ", Confidence: " + std::to_string(confidence[{0}]);
 
             std::cout << output_message << std::endl;
             break;

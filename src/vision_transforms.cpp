@@ -1,6 +1,6 @@
 #include "vision_transforms.h"
 
-using TransformResult = std::variant<cv::Mat, torch::Tensor>;
+using TransformResult = std::variant<cv::Mat, Tensor<float>>;
 
 Compose::Compose(std::initializer_list<std::shared_ptr<Transform>> transforms) : transforms(transforms)
 {
@@ -16,7 +16,7 @@ TransformResult Compose::apply(cv::Mat image)
         {
             output = transform->apply(std::get<cv::Mat>(output));
         }
-        else if (std::holds_alternative<torch::Tensor>(output))
+        else if (std::holds_alternative<Tensor<float>>(output))
         {
             throw std::runtime_error("Image is already a Tensor, cannot apply further transforms");
         }
@@ -32,7 +32,8 @@ TransformResult ToTensor::apply(cv::Mat image)
     int height = image.rows;
     int width = image.cols;
 
-    torch::Tensor tensor = torch::zeros({channels, height, width}, torch::kFloat32);
+    Tensor<float> tensor =
+        Tensor<float>::zeros({static_cast<size_t>(channels), static_cast<size_t>(height), static_cast<size_t>(width)});
 
     for (int c = 0; c < channels; ++c)
     {
@@ -40,7 +41,7 @@ TransformResult ToTensor::apply(cv::Mat image)
         {
             for (int w = 0; w < width; ++w)
             {
-                tensor[c][h][w] = image.at<cv::Vec3b>(h, w)[c] / 255.0;
+                tensor[{c, h, w}] = image.at<cv::Vec3b>(h, w)[c] / 255.0;
             }
         }
     }

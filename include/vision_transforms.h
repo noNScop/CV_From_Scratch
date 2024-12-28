@@ -3,11 +3,11 @@
 
 #include <memory>
 #include <opencv2/opencv.hpp>
-#include <torch/torch.h>
+#include "tensor.h"
 #include <variant>
 #include <vector>
 
-using TransformResult = std::variant<cv::Mat, torch::Tensor>;
+using TransformResult = std::variant<cv::Mat, Tensor<float>>;
 
 class Transform
 {
