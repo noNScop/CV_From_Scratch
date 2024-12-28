@@ -1,6 +1,6 @@
 #include "data_utils.h"
 
-using TransformResult = std::variant<cv::Mat, torch::Tensor>;
+using TransformResult = std::variant<cv::Mat, Tensor<float>>;
 
 DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle, unsigned short num_workers)
     : dataset(std::move(dataset)), batch_size(batch_size), auto_shuffle(auto_shuffle), num_workers(num_workers), gen(rd())
@@ -20,8 +20,8 @@ Batch DataLoader::Iterator::operator*()
 {
     // the last batch can be smaller than dataloader.batch_size
     size_t batch_size = std::min(dataloader.batch_size, dataloader.indices.size() - index);
-    std::vector<torch::Tensor> data(batch_size);
-    std::vector<torch::Tensor> target(batch_size);
+    std::vector<Tensor<float>> data(batch_size);
+    std::vector<Tensor<int>> target(batch_size);
     
     // No mutex is needed because threads are accessing different elements inside the vector
     auto process_batch = [&](size_t start) {
@@ -45,7 +45,7 @@ Batch DataLoader::Iterator::operator*()
     }
 
     // stack tensors into batches
-    return {torch::stack(data, 0), torch::stack(target, 0)};
+    return {Tensor<float>::stack(data, 0), Tensor<int>::stack(target, 0)};
 }
 
 DataLoader::Iterator &DataLoader::Iterator::operator++()
@@ -78,7 +78,7 @@ void DataLoader::shuffle()
     std::shuffle(indices.begin(), indices.end(), gen);
 }
 
-BasicDataset::BasicDataset(std::vector<std::pair<torch::Tensor, torch::Tensor>> data) : data(data)
+BasicDataset::BasicDataset(std::vector<std::pair<Tensor<float>, Tensor<int>>> data) : data(data)
 {
 }
 
@@ -87,7 +87,7 @@ size_t BasicDataset::size() const
     return data.size();
 }
 
-std::pair<torch::Tensor, torch::Tensor> BasicDataset::get_item(size_t index) const
+std::pair<Tensor<float>, Tensor<int>> BasicDataset::get_item(size_t index) const
 {
     if (index < data.size())
     {
@@ -141,7 +141,7 @@ ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> 
             }
 
             // Create label tensor
-            torch::Tensor label_tensor = torch::tensor(label, torch::kInt64);
+            Tensor<int> label_tensor = Tensor<int>({label});
 
             data.push_back({image_path, label_tensor});
         }
@@ -157,7 +157,7 @@ size_t ImageFolder::size() const
     return data.size();
 }
 
-std::pair<torch::Tensor, torch::Tensor> ImageFolder::get_item(size_t index) const
+std::pair<Tensor<float>, Tensor<int>> ImageFolder::get_item(size_t index) const
 {
     if (index >= data.size())
     {
@@ -169,10 +169,10 @@ std::pair<torch::Tensor, torch::Tensor> ImageFolder::get_item(size_t index) cons
 
     TransformResult tensor = transform->apply(image);
 
-    if (!std::holds_alternative<torch::Tensor>(tensor))
+    if (!std::holds_alternative<Tensor<float>>(tensor))
     {
         throw std::runtime_error("Transform must output a Tensor, non-Tensor object detected");
     }
 
-    return {std::get<torch::Tensor>(tensor), label};
+    return {std::get<Tensor<float>>(tensor), label};
 }

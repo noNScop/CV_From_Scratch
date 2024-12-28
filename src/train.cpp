@@ -1,38 +1,38 @@
 #include "train.h"
 
-Optimizer::Optimizer(std::vector<torch::Tensor> parameters, float learning_rate)
+Optimizer::Optimizer(std::vector<Tensor<float>> parameters, float learning_rate)
     : parameters(parameters), learning_rate(learning_rate)
 {
 }
 
 void Optimizer::zero_grad()
 {
-    for (torch::Tensor &param : parameters)
+    for (Tensor<float> &param : parameters)
     {
-        if (param.grad().defined())
-        {
-            param.grad().zero_();
-        }
+        param.zero_grad();
     }
 }
 
-SGD::SGD(std::vector<torch::Tensor> parameters, float learning_rate, float momentum)
+SGD::SGD(std::vector<Tensor<float>> parameters, float learning_rate, float momentum)
     : Optimizer(parameters, learning_rate), momentum(momentum)
 {
-    for (torch::Tensor &param : parameters)
+    for (Tensor<float> &param : parameters)
     {
-        ema.push_back(torch::zeros_like(param));
+        ema.push_back(Tensor<float>::zeros(param.size()));
     }
 }
 
 void SGD::step()
 {
+    NoGradGuard no_grad;
     for (int i = 0; i < parameters.size(); ++i)
     {
-        if (parameters[i].grad().defined())
+        if (parameters[i].grad != nullptr)
         {
-            ema[i] = momentum * ema[i] + parameters[i].grad();
-            parameters[i].data() -= learning_rate * ema[i];
+            ema[i] = (ema[i] * momentum) + *(parameters[i].grad);
+            Tensor<float> add = ema[i] * learning_rate;
+            Tensor<float> minus_add = -add;
+            parameters[i] += minus_add;
         }
     }
 }
@@ -59,8 +59,6 @@ void Learner::train(DataLoader &train_dl, DataLoader &valid_dl, int epochs)
 
 void Learner::train_step(DataLoader &train_dl, SGD &optimizer)
 {
-    namespace F = torch::nn::functional;
-
     float batch_accuracy = 0; // batch accuracy accumulator
     float batch_loss = 0;     // batch loss accumulator
     int iters = 0;
@@ -70,14 +68,27 @@ void Learner::train_step(DataLoader &train_dl, SGD &optimizer)
     {
         ++iters;
         output = model->forward(batch.data);
-        loss = F::cross_entropy(output, batch.target);
+        Tensor<int> targets = batch.target.view({-1});
+        loss = Tensor<float>::cross_entropy(output, targets);
 
         loss.backward();
         optimizer.step();
         optimizer.zero_grad();
 
-        batch_loss += loss.item<float>();
-        batch_accuracy += (output.argmax(1) == batch.target).sum().template item<float>() / batch.data.size(0);
+        NoGradGuard no_grad;
+        batch_loss += loss[{0}];
+        int correct = 0;
+        for (int i = 0; i < batch.data.size()[0]; i++)
+        {
+            Tensor<float> curr_batch = output[{{i, i + 1}}];
+            Tensor<int> argmax = curr_batch.argmax();
+            if (argmax[{0}] == targets[{i}])
+            {
+                correct++;
+            }
+        }
+        batch_accuracy += (float)correct / batch.data.size()[0];
+        no_grad.~NoGradGuard();
     }
 
     train_loss = batch_loss / iters;
@@ -86,9 +97,7 @@ void Learner::train_step(DataLoader &train_dl, SGD &optimizer)
 
 void Learner::valid_step(DataLoader &valid_dl)
 {
-    namespace F = torch::nn::functional;
-
-    torch::NoGradGuard nograd;
+    NoGradGuard no_grad;
     float batch_accuracy = 0; // batch accuracy accumulator
     float batch_loss = 0;     // batch loss accumulator
     int iters = 0;
@@ -98,10 +107,21 @@ void Learner::valid_step(DataLoader &valid_dl)
     {
         ++iters;
         output = model->forward(batch.data);
-        loss = F::cross_entropy(output, batch.target);
+        Tensor<int> targets = batch.target.view({-1});
+        loss = Tensor<float>::cross_entropy(output, targets);
 
-        batch_loss += loss.item<float>();
-        batch_accuracy += (output.argmax(1) == batch.target).sum().template item<float>() / batch.data.size(0);
+        batch_loss += loss[{0}];
+        int correct = 0;
+        for (int i = 0; i < batch.data.size()[0]; i++)
+        {
+            Tensor<float> curr_batch = output[{{i, i + 1}}];
+            Tensor<int> argmax = curr_batch.argmax();
+            if (argmax[{0}] == targets[{i}])
+            {
+                correct++;
+            }
+        }
+        batch_accuracy += (float)correct / batch.data.size()[0];
     }
 
     valid_loss = batch_loss / iters;

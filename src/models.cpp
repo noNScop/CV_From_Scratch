@@ -21,7 +21,7 @@ std::shared_ptr<Sequential> MnistCNN::conv_block(int in_channels, int out_channe
     return sequential;
 }
 
-torch::Tensor MnistCNN::forward(torch::Tensor x)
+Tensor<float> MnistCNN::forward(Tensor<float> x)
 {
     return cnn(x).view({-1, 10});
 }

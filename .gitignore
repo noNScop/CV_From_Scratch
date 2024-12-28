@@ -2,6 +2,7 @@ build/
 lib/Catch2
 lib/libtorch
 lib/opencv
+lib/cereal
 data/
 
 .vscode

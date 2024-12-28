@@ -8,13 +8,16 @@ set(DATA_DIR "${CMAKE_SOURCE_DIR}/data")
 add_definitions(-DDATA_DIR="${DATA_DIR}")
 
 set(CMAKE_PREFIX_PATH
-    "${CMAKE_SOURCE_DIR}/lib/libtorch"
     "${CMAKE_SOURCE_DIR}/lib/Catch2"
     "${CMAKE_SOURCE_DIR}/lib/opencv/build"
 )
 
-find_package(Torch REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+set(CEREAL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/cereal/include")
+include_directories(${CEREAL_INCLUDE_DIR})
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 find_package(OpenCV)
 
@@ -32,7 +35,10 @@ add_executable(CV_From_Scratch
 )
 
 # Link Libtorch
-target_link_libraries(CV_From_Scratch "${TORCH_LIBRARIES}" ${OpenCV_LIBS})
+target_link_libraries(CV_From_Scratch ${OpenCV_LIBS})
+
+# For debugging
+target_compile_options(CV_From_Scratch PRIVATE -O3)
 
 # Set C++ standard
 set_property(TARGET CV_From_Scratch PROPERTY CXX_STANDARD 17)
