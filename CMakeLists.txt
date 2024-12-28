@@ -34,10 +34,10 @@ add_executable(CV_From_Scratch
     src/demo.cpp
 )
 
-# Link Libtorch
+# Link OpenCV
 target_link_libraries(CV_From_Scratch ${OpenCV_LIBS})
 
-# For debugging
+# Add optimisation flag
 target_compile_options(CV_From_Scratch PRIVATE -O3)
 
 # Set C++ standard
