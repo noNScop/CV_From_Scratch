@@ -2,14 +2,20 @@
 #define MODELS_H
 
 #include "layers.h"
-#include <memory>
 #include "tensor.h"
+#include <cereal/archives/binary.hpp>
+#include <memory>
 
 // MnistCNN expects inputs of (batch_size, 1, 28, 28), as mnist images have a single color channel
 class MnistCNN : public Module
 {
   public:
     Tensor<float> forward(Tensor<float> x) override;
+
+    template <class Archive> void serialize(Archive &ar)
+    {
+        ar(cereal::base_class<Module>(this), cnn);
+    }
 
   private:
     std::shared_ptr<Sequential> conv_block(int in_channels, int out_channels, int kernel_size = 3,

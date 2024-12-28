@@ -1,5 +1,8 @@
 #include "../include/tensor.h"
 #include <algorithm>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -2187,6 +2190,68 @@ template <typename T> void Tensor<T>::unfold_backward(int kernel_size, int paddi
                     (*operand1->grad->data)[index2] += (*this->grad->data)[index];
                 }
             }
+        }
+    }
+}
+
+// ========================================================
+// SECTION: Serialization
+// ========================================================
+
+template <typename T>
+template <class Archive> void Tensor<T>::serialize(Archive &ar)
+{
+    if constexpr (Archive::is_saving::value)
+    {
+        ar(shape, offset, strides);
+
+        bool data_not_null = (data != nullptr);
+        ar(data_not_null);
+        size_t data_size = data_not_null ? data->size() : 0;
+        ar(data_size);
+        if (data_not_null)
+        {
+            ar(*data);
+        }
+
+        bool grad_not_null = (grad != nullptr);
+        ar(grad_not_null);
+        if (grad_not_null)
+        {
+            ar(*grad);
+        }
+    }
+    else
+    {
+        ar(shape, offset, strides);
+
+        if (data)
+        {
+            delete data;
+            data = nullptr;
+        }
+        if (grad)
+        {
+            delete grad;
+            grad = nullptr;
+        }
+
+        bool data_not_null;
+        ar(data_not_null);
+        size_t data_size = 0;
+        ar(data_size);
+        if (data_not_null)
+        {
+            data = new TensorData<T>(data_size, static_cast<T>(0));
+            ar(*data);
+        }
+
+        bool grad_not_null;
+        ar(grad_not_null);
+        if (grad_not_null)
+        {
+            grad = new Tensor<T>();
+            ar(*grad);
         }
     }
 }

@@ -14,6 +14,9 @@ set(CMAKE_PREFIX_PATH
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+set(CEREAL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/cereal/include")
+include_directories(${CEREAL_INCLUDE_DIR})
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 find_package(OpenCV)

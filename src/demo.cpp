@@ -3,6 +3,9 @@
 #include "models.h"
 #include "train.h"
 #include "vision_transforms.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <fstream>
 #include <iostream>
 
 #ifndef DATA_DIR
@@ -87,10 +90,34 @@ int main()
             break;
         }
         case 2: // Saving weights
-            std::cout << "\nNot implemented yet\n";
+            {
+                std::string save_path;
+                std::cout << "Enter the path to save the model: ";
+                std::cin >> save_path;
+                std::ofstream file(save_path, std::ios::binary); 
+                if (!file.is_open())
+                {
+                    throw std::ios_base::failure("Failed to open file for saving.");
+                }
+                cereal::BinaryOutputArchive archive_save(file);
+                archive_save(model);
+                std::cout << "Saved the model to: " << save_path << "\n";
+            }
             break;
         case 3: // Loading weights
-            std::cout << "\nNot implemented yet\n";
+            {
+                std::string load_path;
+                std::cout << "Enter the path to load the model: ";
+                std::cin >> load_path;
+                std::ifstream file(load_path, std::ios::binary);
+                if (!file.is_open())
+                {
+                    throw std::ios_base::failure("Failed to open file for loading.");
+                }
+                cereal::BinaryInputArchive archive(file); 
+                archive(model);
+                std::cout << "Loaded the model from: " << load_path << "\n";
+            }
             break;
         case 4: // Inference
         {
@@ -120,7 +147,7 @@ int main()
             Tensor<float> img_tensor = std::get<Tensor<float>>(transform(image)).view({1, 1, 28, 28});
 
             model->set_training(false);
-            // torch::NoGradGuard no_grad;
+            NoGradGuard no_grad;
             auto output = model->forward(img_tensor);
             Tensor<float> curr_batch = output[{{0, 1}}];
             Tensor<int> argmax = curr_batch.argmax();

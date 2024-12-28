@@ -1,4 +1,5 @@
 #pragma once
+#include <cereal/archives/binary.hpp>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -17,6 +18,11 @@ template <typename T> struct TensorData
     T &operator[](size_t index);
 
     const T &operator[](size_t index) const;
+
+    template <class Archive> void serialize(Archive &ar)
+    {
+        ar(vec, reference_count);
+     }
 };
 
 template <typename T> class Tensor
@@ -183,6 +189,8 @@ template <typename T> class Tensor
     static Tensor unfold(Tensor &in, int kernel_size, int padding, int stride);
 
     ~Tensor();
+
+    template <class Archive> void serialize(Archive &ar);
 };
 
 class NoGradGuard
