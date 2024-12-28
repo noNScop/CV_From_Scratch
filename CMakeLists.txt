@@ -31,7 +31,7 @@ add_executable(CV_From_Scratch
     src/demo.cpp
 )
 
-# Link Libtorch
+# Link Libtorch and OpenCV
 target_link_libraries(CV_From_Scratch "${TORCH_LIBRARIES}" ${OpenCV_LIBS})
 
 # Set C++ standard
