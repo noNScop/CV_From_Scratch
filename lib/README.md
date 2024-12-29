@@ -1,13 +1,13 @@
 # Libraries Setup
 
 ## Versions
-I am using the following versions of these libraries, although using a little older or newer versions should make much of a difference:
-- **LibTorch** - **2.5.0+cpu**
+I am using the following versions of these libraries, although using a little older or newer versions shouldn't make much of a difference:
+- **Cereal** - **1.3.2**
 - **OpenCV** - **4.10.0**
 - **Catch2** - **3.7.1**
 
-## LibTorch
-Go to [LibTorch](https://pytorch.org/) and download LibTorch for your operating system from there, place it inside `lib/` directory with name `libtorch/`
+## Cereal
+Go to [Cereal](https://uscilab.github.io/cereal/index.html) and download Cereal for your operating system from there, place it inside `lib/` directory with name `cereal/`
 
 ## OpenCV
 To set up **OpenCV**, follow these steps:
