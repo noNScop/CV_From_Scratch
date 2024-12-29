@@ -1,6 +1,6 @@
 # CV_From_Scratch
 
-**CV_From_Scratch** is a project where I implemented a **PyTorch-like library in C++** for **Computer Vision** tasks. This library includes layers, a CNN architecture, a `Learner` class, data loaders, and basic image transforms, all from scratch. The project uses **OpenCV** for image processing and **LibTorch** (temporarily) for tensor operations. My colleague will later replace LibTorch with a custom tensor implementation.
+**CV_From_Scratch** is a project where I implemented a **PyTorch-like library in C++** for **Computer Vision** tasks. This library includes layers, a CNN architecture, a `Learner` class, data loaders, and basic image transforms, all from scratch. The project uses **OpenCV** for image processing and **LibTorch** (temporarily) for tensor operations. My colleague later replaced LibTorch with a custom tensor implementation, this final version can be seen in the `final` branch.
 
 ## Features
 - Implemented CNN architecture and layers from scratch in C++.
