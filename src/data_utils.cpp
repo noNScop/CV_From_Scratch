@@ -99,9 +99,6 @@ std::pair<Tensor<float>, Tensor<int>> BasicDataset::get_item(size_t index) const
     }
 }
 
-// In this version it is processing and transforming images in get_item method, which is more STABLE but SLOWER
-// than doing it for all images during initialisation of ImageFolder Dataset, for FASTER PERFORMANCE on MNIST dataset 
-// checkout to "final code" commit, however it is LESS STABLE and sometimes segmentation fault occurs during 
 // initialisation of ImageFolder Dataset
 ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> &class_to_idx,
                          std::shared_ptr<Transform> const &transform)
