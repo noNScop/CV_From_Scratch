@@ -11,11 +11,6 @@ class Module
   public:
     Module();
 
-    // Returns state dictionary with parameters as  a map, right now in an initial state,
-    // it is supposed to be used for saving tensors, although it may not have all functionality
-    // required just yet
-    std::map<std::string, torch::Tensor> state_dict() const;
-
     // training getter
     bool is_training() const;
 

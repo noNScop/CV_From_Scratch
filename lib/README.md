@@ -1,7 +1,7 @@
 # Libraries Setup
 
 ## Versions
-I am using the following versions of these libraries, although using a little older or newer versions should make much of a difference:
+I am using the following versions of these libraries, although using a little older or newer versions shouldn't make much of a difference:
 - **LibTorch** - **2.5.0+cpu**
 - **OpenCV** - **4.10.0**
 - **Catch2** - **3.7.1**
