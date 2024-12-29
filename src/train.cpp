@@ -59,8 +59,8 @@ void Learner::train(DataLoader &train_dl, DataLoader &valid_dl, int epochs)
 
 void Learner::train_step(DataLoader &train_dl, SGD &optimizer)
 {
-    float batch_accuracy = 0; // batch accuracy accumulator
-    float batch_loss = 0;     // batch loss accumulator
+    float batch_accuracy = 0; 
+    float batch_loss = 0;   
     int iters = 0;
     model->set_training(true);
 
@@ -98,8 +98,8 @@ void Learner::train_step(DataLoader &train_dl, SGD &optimizer)
 void Learner::valid_step(DataLoader &valid_dl)
 {
     NoGradGuard no_grad;
-    float batch_accuracy = 0; // batch accuracy accumulator
-    float batch_loss = 0;     // batch loss accumulator
+    float batch_accuracy = 0; 
+    float batch_loss = 0;   
     int iters = 0;
     model->set_training(false);
 

@@ -14,19 +14,14 @@ class Module
   public:
     Module();
 
-    // training getter
     bool is_training() const;
 
-    // training setter
     void set_training(bool train);
 
-    // Get all parameters recursively
     std::vector<Tensor<float>> parameters() const;
 
-    // children modules getter
     std::vector<std::shared_ptr<Module>> get_children() const;
 
-    // Overloading operator() to mimic Python's __call__
     template <typename... Args> Tensor<float> operator()(Args &&...args); // perfect forwarding
 
     virtual Tensor<float> forward(Tensor<float> x) = 0;
@@ -37,10 +32,8 @@ class Module
     }
 
   protected:
-    // params setter
     void register_parameters(const std::initializer_list<Tensor<float>> parameters);
 
-    // children setter
     void register_modules(const std::initializer_list<std::shared_ptr<Module>> modules);
 
   private:
@@ -52,7 +45,6 @@ class Module
 class Linear : public Module
 {
   public:
-    // ni - number of input features, nf - number of output features
     Linear(int in_channels, int out_channels, bool use_xavier = false, bool use_bias = true);
 
     Linear() {};
@@ -82,7 +74,6 @@ class Linear : public Module
     bool use_bias;
 };
 
-// classic convolutional layer
 class Conv2d : public Module
 {
   public:
@@ -126,7 +117,6 @@ class Conv2d : public Module
     int output_height;
 };
 
-// Batch normalization layer
 class BatchNorm2d : public Module
 {
   public:
@@ -184,10 +174,8 @@ class ReLU : public Module
     }
 };
 
-// Overloading operator() to mimic Python's __call__
 template <typename... Args> Tensor<float> Module::operator()(Args &&...args) // perfect forwarding
 {
-    // Call forward() and return the result
     return forward(std::forward<Args>(args)...);
 }
 

@@ -15,17 +15,12 @@
 int main()
 {
     std::shared_ptr<MnistCNN> model = std::make_shared<MnistCNN>(MnistCNN());
-    // Initialize dataset by providing the path to the MNIST data directory
     std::unordered_map<std::string, int> class_to_idx;
-    // Adjust this path if necessary
     std::string mnist_train_path = std::string(DATA_DIR) + "/training";
-    // Adjust this path if necessary
     std::string mnist_valid_path = std::string(DATA_DIR) + "/testing";
-    // Create datasets
     std::shared_ptr<ImageFolder> train_ds = std::make_shared<ImageFolder>(mnist_train_path, class_to_idx);
     std::shared_ptr<ImageFolder> valid_ds = std::make_shared<ImageFolder>(mnist_valid_path, class_to_idx);
 
-    // Create the reverse mapping for inference
     std::unordered_map<int, std::string> idx_to_class;
     for (auto const &pair : class_to_idx)
     {
@@ -45,26 +40,24 @@ int main()
 
         if (std::cin.fail())
         {
-            std::cin.clear();                                                   // Clear the error state
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Ignore the invalid input
+            std::cin.clear();                                                   
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << "\nInvalid choice. Please select a valid option.\n";
             continue;
         }
 
         switch (choice)
         {
-        case 1: // Training
+        case 1: 
         {
             int epochs;
 
-            // Loop until valid input for epochs is provided
             while (true)
             {
                 std::string input;
                 std::cout << "\nEnter the number of epochs: ";
                 std::cin >> input;
 
-                // Check if the input is valid
                 try
                 {
                     epochs = std::stoi(input);
@@ -76,12 +69,11 @@ int main()
                 }
                 catch (const std::invalid_argument &e)
                 {
-                    std::cin.clear();                                                   // Clear error flag
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Discard invalid input
+                    std::cin.clear();                                                   
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
                     std::cerr << "Invalid input. Please enter a positive integer.\n";
                 }
             }
-            // Create DataLoaders
             DataLoader train_dl = DataLoader(train_ds, 32);
             DataLoader valid_dl = DataLoader(valid_ds, 32, false);
 
@@ -89,7 +81,7 @@ int main()
             learn.train(train_dl, valid_dl, epochs);
         }
         break;
-        case 2: // Saving weights
+        case 2: 
         {
             std::string save_path;
             std::cout << "Enter the path to save the model: ";
@@ -107,7 +99,7 @@ int main()
             std::cout << "Saved the model to: " << save_path << "\n";
         }
         break;
-        case 3: // Loading weights
+        case 3:
         {
             std::string load_path;
             std::cout << "Enter the path to load the model: ";
@@ -134,7 +126,7 @@ int main()
             std::cout << "Loaded the model from: " << load_path << "\n";
         }
         break;
-        case 4: // Inference
+        case 4:
         {
             cv::Mat image;
             std::string path;

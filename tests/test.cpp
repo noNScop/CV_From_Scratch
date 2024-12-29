@@ -9,22 +9,18 @@
 
 TEST_CASE("Linear Layer", "[layers]")
 {
-    // Different initializations
     REQUIRE_NOTHROW(Linear(1, 1, true, true));
     REQUIRE_NOTHROW(Linear(1, 1, true, false));
     REQUIRE_NOTHROW(Linear(1, 1, false, true));
     REQUIRE_NOTHROW(Linear(1, 1, false, false));
 
-    // Test parameters registering
     Linear linear = Linear(3, 6);
     REQUIRE(linear.parameters()[0].equal(linear.weights));
     REQUIRE(linear.parameters()[1].equal(linear.bias));
 
-    // Test output sizes
     Tensor<float> sample_input = Tensor<float>::randn({32, 3});
     REQUIRE(linear(sample_input).size() == std::vector<size_t>({32, 6}));
 
-    // Test output values
     linear.weights = Tensor<float>({1, 2, 3, 4, 5, 6, 7, 8, 9}).view({3, 3});
     linear.bias = Tensor<float>({0, 0, 0});
     Tensor<float> test_input = Tensor<float>({1, 2, 3, 4, 5, 6}).view({2, 3});
@@ -34,22 +30,18 @@ TEST_CASE("Linear Layer", "[layers]")
 
 TEST_CASE("Convolutional layer", "[layers]")
 {
-    // Different initializations
     REQUIRE_NOTHROW(Conv2d(1, 1, 1, 1, 0, true, true));
     REQUIRE_NOTHROW(Conv2d(1, 1, 1, 1, 0, true, false));
     REQUIRE_NOTHROW(Conv2d(1, 1, 1, 1, 0, false, true));
     REQUIRE_NOTHROW(Conv2d(1, 1, 1, 1, 0, false, false));
 
-    // Test parameters registering
     Conv2d conv = Conv2d(3, 10, 3);
     REQUIRE(conv.parameters()[0].equal(conv.weights));
     REQUIRE(conv.parameters()[1].equal(conv.bias));
 
-    // Test output sizes
     Tensor<float> sample_input = Tensor<float>::randn({32, 3, 224, 224});
     REQUIRE(conv(sample_input).size() == std::vector<size_t>({32, 10, 222, 222}));
 
-    // Test output values
     conv = Conv2d(1, 1, 2, 1, 0, false, false);
     conv.weights = Tensor<float>({2., 1., 1., -1.}).view({1, 1, 2, 2});
     Tensor<float> test_input = Tensor<float>({1., 2., 3., 4., 5., 6., 7., 8., 9.}).view({1, 1, 3, 3});
@@ -59,13 +51,11 @@ TEST_CASE("Convolutional layer", "[layers]")
 
 TEST_CASE("Batch normalization layer", "[layers]")
 {
-    // Different initializations
     REQUIRE_NOTHROW(BatchNorm2d(1, true, true));
     REQUIRE_NOTHROW(BatchNorm2d(1, true, false));
     REQUIRE_NOTHROW(BatchNorm2d(1, false, true));
     REQUIRE_NOTHROW(BatchNorm2d(1, false, false));
 
-    // Test parameters registering
     BatchNorm2d batch_norm = BatchNorm2d(3, true, true);
     
     Tensor<float> three_zeros = Tensor<float>::zeros({3});
@@ -77,23 +67,19 @@ TEST_CASE("Batch normalization layer", "[layers]")
     REQUIRE(batch_norm.parameters()[0].equal(three_ones));
     REQUIRE(batch_norm.parameters()[1].equal(three_zeros));
 
-    // Test normalization on training
     Tensor<float> sample_input = Tensor<float>::randn({1, 3, 10, 10});
     Tensor<float> normalized_input = batch_norm(sample_input);
 
-    // Mean
     Tensor<float> normalized_input_mean = normalized_input.mean({0, 2, 3}, false);
     Tensor<float> difference = (Tensor<float>::zeros({3}) - normalized_input_mean);
     Tensor<float> diff_mean = difference.mean();
     REQUIRE(std::abs(diff_mean[{0}]) < 0.01);
 
-    // Variance
     Tensor<float> normalized_input_var = normalized_input.var({0, 2, 3}, false);
     difference = (Tensor<float>::ones({3}) - normalized_input_var);
     diff_mean = difference.mean();
     REQUIRE(std::abs(diff_mean[{0}]) < 0.01);
 
-    // Test normalization on validation - check running stats
     for (int i = 0; i < 1000; ++i)
     {
         normalized_input = batch_norm(sample_input);
@@ -101,13 +87,11 @@ TEST_CASE("Batch normalization layer", "[layers]")
     batch_norm.set_training(false);
     normalized_input = batch_norm(sample_input);
 
-    // Mean
     normalized_input_mean = normalized_input.mean({0, 2, 3}, false);
     difference = (Tensor<float>::zeros({3}) - normalized_input_mean);
     diff_mean = difference.mean();
     REQUIRE(std::abs(diff_mean[{0}]) < 0.01);
 
-    // Variance
     normalized_input_var = normalized_input.var({0, 2, 3}, false);
     difference = (Tensor<float>::ones({3}) - normalized_input_var);
     diff_mean = difference.mean();
@@ -126,7 +110,6 @@ TEST_CASE("Sequential layer", "[layers]")
         test_output = layer->forward(test_output);
     }
 
-    // Test functionality / Module registration
     REQUIRE(seq(sample_input).equal(test_output));
 }
 
@@ -144,7 +127,6 @@ TEST_CASE("SGD optimizer", "[optimizers]")
     Tensor<float> y = (x * 3) + 2;
     Linear linear = Linear(1, 1);
 
-    // Different initializations
     REQUIRE_NOTHROW(SGD(linear.parameters()));
     REQUIRE_NOTHROW(SGD(linear.parameters(), 1e-4, 0.99));
 
@@ -152,7 +134,6 @@ TEST_CASE("SGD optimizer", "[optimizers]")
     Tensor<float> out;
     Tensor<float> loss;
 
-    // Test on simple linear regression task
     for (int i = 0; i < 100; ++i)
     {
         out = linear(x);
@@ -204,8 +185,6 @@ TEST_CASE("DataLoader batching", "[dataloader]")
 
 TEST_CASE("DataLoader shuffling", "[dataloader]")
 {
-    // There is a very small chance that this test fails if the same order
-    // is generated twice
     std::vector<std::pair<Tensor<float>, Tensor<int>>> data;
     for (int i = 0; i < 100; ++i)
     {

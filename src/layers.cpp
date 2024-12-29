@@ -4,13 +4,11 @@ Module::Module() : training(true)
 {
 }
 
-// training getter
 bool Module::is_training() const
 {
     return training;
 }
 
-// training setter
 void Module::set_training(bool train)
 {
     training = train;
@@ -20,12 +18,9 @@ void Module::set_training(bool train)
     }
 }
 
-// Get all parameters recursively
 std::vector<Tensor<float>> Module::parameters() const
 {
-    // copy params, to safely add params from children
     std::vector<Tensor<float>> all_params = params;
-    // auto = std::shared_ptr<Module>
     for (const auto &child : children)
     {
         auto child_params = child->parameters();
@@ -34,36 +29,31 @@ std::vector<Tensor<float>> Module::parameters() const
     return all_params;
 }
 
-// children modules getter
 std::vector<std::shared_ptr<Module>> Module::get_children() const
 {
     return children;
 }
 
-// params setter
 void Module::register_parameters(const std::initializer_list<Tensor<float>> parameters)
 {
     params.insert(params.end(), parameters.begin(), parameters.end());
 }
 
-// children setter
 void Module::register_modules(const std::initializer_list<std::shared_ptr<Module>> modules)
 {
     children.insert(children.end(), modules.begin(), modules.end());
 }
 
-// ni - number of input features, nf - number of output features
 Linear::Linear(int in_channels, int out_channels, bool use_xavier, bool use_bias)
     : use_bias(use_bias)
 {
     std::vector<size_t> shape = {static_cast<size_t>(out_channels), static_cast<size_t>(in_channels)};
-    // xavier is best for sigmoid, tanh, softmax activations
-    // kaiming is best for ReLU
+
     if (use_xavier)
     {
         weights = Tensor<float>::xavier_normal(shape, 1, true);
     }
-    else // use kaiming
+    else 
     {
         weights = Tensor<float>::kaiming_normal(shape, true);
     }
@@ -104,13 +94,12 @@ Conv2d::Conv2d(int in_channels, int out_channels, int kernel_size, int stride, i
         static_cast<size_t>(kernel_size), 
         static_cast<size_t>(kernel_size)
     };
-    // xavier is best for sigmoid, tanh, softmax activations
-    // kaiming is best for ReLU
+
     if (use_xavier)
     {
         weights = Tensor<float>::xavier_normal(shape, 1, true);
     }
-    else // use kaiming
+    else 
     {
         weights = Tensor<float>::kaiming_normal(shape, true);
     }
@@ -132,7 +121,6 @@ Tensor<float> Conv2d::forward(Tensor<float> x)
     height = x.size()[2];
     width = x.size()[3];
 
-    // unfold creates tensor that allows applying convolution by matrix multiplication with flattened kernels
     x = Tensor<float>::unfold(x, kernel_size, padding, stride);
     Tensor<float> weights_view = weights.view({out_channels, -1});
     x = Tensor<float>::matmul(weights_view, x); // flatten the weights
@@ -152,7 +140,7 @@ Tensor<float> Conv2d::forward(Tensor<float> x)
 BatchNorm2d::BatchNorm2d(int in_channels, bool zero_init, float eps, float momentum)
     : in_channels(in_channels), eps(eps), momentum(momentum)
 {
-    // initialising gamma with zeros is usefull for residual connections
+    // Initialising gamma with zeros is usefull for residual connections
     if (zero_init)
     {
         gamma = Tensor<float>::zeros({static_cast<size_t>(in_channels)}, true);
@@ -172,8 +160,7 @@ Tensor<float> BatchNorm2d::forward(Tensor<float> x)
 {
     if (is_training())
     {
-        // calculate statistics for each channel across batch and spatial dimensions
-        mean = x.mean({0, 2, 3}, true); // keepdim = true
+        mean = x.mean({0, 2, 3}, true);
         var = x.var({0, 2, 3}, false);
         Tensor<float> var_view = var.view({1, -1, 1, 1});
         Tensor<float> var_plus_eps = var_view + eps;

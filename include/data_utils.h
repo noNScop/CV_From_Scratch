@@ -24,15 +24,11 @@ struct Batch
 class Dataset
 {
   public:
-    // Pure virtual method to get dataset size
     virtual size_t size() const = 0;
 
-    // Pure virtual method to get a single data item at a specific index
     virtual std::pair<Tensor<float>, Tensor<int>> get_item(size_t index) const = 0;
 };
 
-// begin() must be called for auto shuffle, therefore it is preffered to use Dataloader like this:
-// for(auto &batch : dataloader) {}
 class DataLoader
 {
   public:
@@ -58,7 +54,6 @@ class DataLoader
 
     Iterator end();
 
-    // shuffles the indices vector
     void shuffle();
 
   private:
@@ -67,13 +62,11 @@ class DataLoader
     bool auto_shuffle;
     unsigned short num_workers;
     std::vector<size_t> indices;
-    // actually last batch end index + 1, serves as the ending condition in Iterator of Dataloader
     size_t last_batch_end_index;
     std::random_device rd;
     std::default_random_engine gen;
 };
 
-// Dataset in the simplest form, initialised with a vector of pairs of objects and targets
 class BasicDataset : public Dataset
 {
   public:
@@ -117,7 +110,6 @@ class ImageFolder : public Dataset
     std::unordered_map<std::string, int> &class_to_idx;
 
   private:
-    // a vector of data paths and targets
     std::vector<std::pair<std::string, Tensor<int>>> data;
     std::shared_ptr<Transform> transform;
 };

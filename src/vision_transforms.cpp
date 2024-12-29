@@ -6,7 +6,6 @@ Compose::Compose(std::initializer_list<std::shared_ptr<Transform>> transforms) :
 {
 }
 
-// Apply internaly stored transforms sequentialy
 TransformResult Compose::apply(cv::Mat image)
 {
     TransformResult output = image;
@@ -24,8 +23,6 @@ TransformResult Compose::apply(cv::Mat image)
     return output;
 }
 
-// Deliberately not using high level function (which is probably faster) for transforming cv::Mat into torch::Tensor
-// as later torch::Tensors are supposed to be substituted with custom Tensor
 TransformResult ToTensor::apply(cv::Mat image)
 {
     int channels = image.channels();

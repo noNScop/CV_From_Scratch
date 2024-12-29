@@ -5,10 +5,8 @@ using TransformResult = std::variant<cv::Mat, Tensor<float>>;
 DataLoader::DataLoader(std::shared_ptr<Dataset> dataset, size_t batch_size, bool auto_shuffle, unsigned short num_workers)
     : dataset(std::move(dataset)), batch_size(batch_size), auto_shuffle(auto_shuffle), num_workers(num_workers), gen(rd())
 {
-    // Initialize indices
     indices.resize(this->dataset->size());
     std::iota(indices.begin(), indices.end(), 0);
-    // Calculate last index + 1, that serves as a stopping condition in Iterator of Dataloader
     last_batch_end_index = indices.size() + (indices.size() % batch_size);
 }
 
@@ -18,12 +16,11 @@ DataLoader::Iterator::Iterator(DataLoader &dataloader, size_t index) : dataloade
 
 Batch DataLoader::Iterator::operator*()
 {
-    // the last batch can be smaller than dataloader.batch_size
+    // The last batch can be smaller than dataloader.batch_size
     size_t batch_size = std::min(dataloader.batch_size, dataloader.indices.size() - index);
     std::vector<Tensor<float>> data(batch_size);
     std::vector<Tensor<int>> target(batch_size);
     
-    // No mutex is needed because threads are accessing different elements inside the vector
     auto process_batch = [&](size_t start) {
         for (size_t i = start; i < batch_size; i += dataloader.num_workers)
         {
@@ -44,7 +41,6 @@ Batch DataLoader::Iterator::operator*()
         thread.join();
     }
 
-    // stack tensors into batches
     return {Tensor<float>::stack(data, 0), Tensor<int>::stack(target, 0)};
 }
 
@@ -99,7 +95,6 @@ std::pair<Tensor<float>, Tensor<int>> BasicDataset::get_item(size_t index) const
     }
 }
 
-// initialisation of ImageFolder Dataset
 ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> &class_to_idx,
                          std::shared_ptr<Transform> const &transform)
     : transform(transform), class_to_idx(class_to_idx)
@@ -125,7 +120,6 @@ ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> 
                 continue;
             }
 
-            // Convert class name to label and store the mapping
             int label;
             if (class_to_idx.count(class_name))
             {
@@ -137,7 +131,6 @@ ImageFolder::ImageFolder(std::string path, std::unordered_map<std::string, int> 
                 class_to_idx[class_name] = label;
             }
 
-            // Create label tensor
             Tensor<int> label_tensor = Tensor<int>({label});
 
             data.push_back({image_path, label_tensor});
