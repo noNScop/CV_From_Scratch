@@ -14,11 +14,6 @@ class Module
   public:
     Module();
 
-    // Returns state dictionary with parameters as  a map, right now in an initial state,
-    // it is supposed to be used for saving tensors, although it may not have all functionality
-    // required just yet
-    std::map<std::string, Tensor<float>> state_dict() const;
-
     // training getter
     bool is_training() const;
 
@@ -149,6 +144,7 @@ class BatchNorm2d : public Module
             register_parameters({gamma, beta});
         }
     }
+
   private:
     Tensor<float> gamma;
     Tensor<float> beta;
@@ -198,7 +194,7 @@ template <typename... Args> Tensor<float> Module::operator()(Args &&...args) // 
 CEREAL_REGISTER_TYPE(Sequential);
 CEREAL_REGISTER_TYPE(ReLU);
 CEREAL_REGISTER_TYPE(Linear);
-CEREAL_REGISTER_TYPE(Conv2d)  ;
+CEREAL_REGISTER_TYPE(Conv2d);
 CEREAL_REGISTER_TYPE(BatchNorm2d);
 
 #endif

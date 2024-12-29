@@ -4,30 +4,6 @@ Module::Module() : training(true)
 {
 }
 
-// Returns state dictionary with parameters as  a map, right now in an initial state,
-// it is supposed to be used for saving tensors, although it may not have all functionality
-// required just yet
-std::map<std::string, Tensor<float>> Module::state_dict() const
-{
-    std::map<std::string, Tensor<float>> state;
-    int i = 0;
-    for (const auto &param : params)
-    {
-        state["param_" + std::to_string(i++)] = param;
-    }
-    int j = 0;
-    for (const auto &child : children)
-    {
-        auto child_state = child->state_dict();
-        for (const auto &kv : child_state)
-        {
-            state["child_" + std::to_string(j) + "." + kv.first] = kv.second;
-        }
-        ++j;
-    }
-    return state;
-}
-
 // training getter
 bool Module::is_training() const
 {
