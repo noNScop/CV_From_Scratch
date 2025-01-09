@@ -71,6 +71,10 @@ CV_From_Scratch/
 └── README.md          # Project description
 ```
 
+## Contributors
+- **[noNScop](https://github.com/noNScop)** - CNN architecture, layers, DataLoader, Datasets, image transformations, demonstration app, unit tests
+- **[Adam](https://github.com/Adam-Mazur)** - Tensor, auto grad, saving/loading weights (serialization), unit tests
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
